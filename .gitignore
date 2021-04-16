@@ -1,2 +1,4 @@
 node_modules/
 public/content_script.js
+public/worker.js
+public/background.js

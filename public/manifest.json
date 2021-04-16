@@ -3,13 +3,16 @@
   "name":"youtuberg",
   "version":"0.0.0",
   "permissions":[],
-  "content_scripts": [{
-    "matches": ["*://*.youtube.com/*"],
-    "js": ["content_script.js"]
-  }],
   "icons": {
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
-  }
+  },
+  "background":{
+    "scripts":[
+      "background.js"
+    ],
+    "persistent": true
+  },
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
 }
