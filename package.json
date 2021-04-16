@@ -1,0 +1,19 @@
+{
+  "name": "youtuberg",
+  "version": "0.0.0",
+  "description": "Intuitive operation of YouTube videos in visual novel format",
+  "scripts": {
+    "dev": "esbuild src/content_script.ts --bundle --outfile=build/content_script.js --watch",
+    "build": "esbuild src/content_script.ts --bundle --outfile=build/content_script.js --minify",
+    "type-check": "tsc --noEmit"
+  },
+  "author": "ryoha",
+  "license": "ISC",
+  "dependencies": {
+    "esbuild": "^0.11.11"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.41",
+    "typescript": "^4.2.4"
+  }
+}
