@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "description": "Intuitive operation of YouTube videos in visual novel format",
   "scripts": {
-    "dev": "esbuild src/content_script.ts --bundle --outfile=build/content_script.js --watch",
-    "build": "esbuild src/content_script.ts --bundle --outfile=build/content_script.js --minify",
+    "dev": "esbuild src/content_script.ts --bundle --outdir=public --watch",
+    "build": "esbuild src/content_script.ts --bundle --outdir=public --minify",
     "type-check": "tsc --noEmit"
   },
   "author": "ryoha",
