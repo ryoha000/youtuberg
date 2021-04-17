@@ -2,14 +2,18 @@ const version = 10001;
 
 class ModuleClass {
 
-  locateFile(baseName) {
+  locateFile(baseName, _) {
     return `build/${baseName}`;
   }
 
   instantiateWasm(imports, callback) {
-    instantiateCachedURL(version, this.locateFile('cv-wasm.wasm'), imports)
-      .then(instance => callback(instance));
-    return { };
+    return new Promise(resolve => {
+      instantiateCachedURL(version, this.locateFile('cv-wasm.wasm'), imports)
+        .then(instance => {
+          callback(instance)
+          resolve()
+        }).catch(e => console.error(e));
+    })
   }
 
   onInit(cb) {
