@@ -1,6 +1,7 @@
 importScripts('wasm-util.js', 'module.js', 'build/cv-wasm.js');
 import { ToBackgroundFromWebWorkerEvent, ToWebWorkerFromBackground } from "./lib/typing/message";
 import { OpenCV } from "./@types/opencv";
+import compare from './lib/compareHist'
 declare var cv: OpenCV
 
 addEventListener('message', (ev: MessageEvent<ToWebWorkerFromBackground>) => {
@@ -9,7 +10,6 @@ addEventListener('message', (ev: MessageEvent<ToWebWorkerFromBackground>) => {
   switch (meta.type) {
     case 'convertToGray':
       const { data, width, height } = meta
-      console.log('img in worker')
       const img1Raw = cv.matFromArray(width, height, cv.CV_8UC4, data);
       const img1 = new cv.Mat();
       console.log('setup Mat')
@@ -21,6 +21,9 @@ addEventListener('message', (ev: MessageEvent<ToWebWorkerFromBackground>) => {
       console.log('postMessage')
       img1.delete()
       img1Raw.delete()
+      break
+    case 'compare':
+      compare(cv, postMessageToBackground, meta)
       break
     default:
   }

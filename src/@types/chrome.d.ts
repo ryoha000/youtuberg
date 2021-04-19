@@ -27,3 +27,4 @@ interface Sender {
 declare var chrome: ChromeExtension
 
 declare function postMessage<T>(message: T, targetOrigin?: string, transfer?: Transferable[] | undefined): void
+type Valueof<T> = T[keyof T]
