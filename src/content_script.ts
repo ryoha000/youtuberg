@@ -5,7 +5,8 @@ try {
   const $video = c.getVideoElement()
   const $canvas = c.setupCanvas()
   let time = 0
-  const TIME_SECOND = 0.1
+  const TIME_SECOND = 1
+
   setTimeout(async () => {
     $video.pause()
     const videoRect = $video.getClientRects()
@@ -40,16 +41,9 @@ try {
         const msg = { type, time, data: arr, width: $canvas.width, height: $canvas.height }
         console.log("send background")
         postMessageToBackground(msg)
-        resolve({})
-        // setTimeout(() => {
-        // }, 1000);
       }
+      resolve({})
     })
-    // return new Promise(resolve => {
-    // })
-  }
-  const aaa = () => {
-
   }
 
   chrome.runtime.onMessage.addListener<ToContentFromBackground>((msg, sender, sendResponse) => {

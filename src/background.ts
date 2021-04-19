@@ -9,7 +9,6 @@ const resPixel: CompareResultPixel[] = []
 const postMessageToWebWorker = (msg: ToWebWorkerFromBackground) => worker.postMessage(msg)
 const postMessageToContent = (msg: ToContentFromBackground) => chrome.tabs.sendMessage(tabId, msg, () => {})
 
-
 worker.addEventListener('message', (ev: MessageEvent<ToBackgroundFromWebWorkerEvent>) => {
   const msg = ev.data;
   console.log('from webworker')
@@ -25,6 +24,9 @@ worker.addEventListener('message', (ev: MessageEvent<ToBackgroundFromWebWorkerEv
       break
     case 'comparePixel':
       resPixel.push(msg)
+      break
+    default:
+      const _exhaustiveCheck: never = msg;
       break
   }
 });
@@ -49,13 +51,15 @@ chrome.runtime.onMessage.addListener<ToBackgroundFromContent>((msg, sender, send
       }
       break
     case 'end':
-      console.log('end')
+      console.warn('end')
       setTimeout(() => {
-        console.log(resHist)
-        console.log(resPixel)
+        console.log(JSON.stringify(resHist))
+        console.log(JSON.stringify(resPixel))
       }, 2000);
       break
     default:
+      const _exhaustiveCheck: never = msg;
+      break
   }
   sendResponse()
   return true

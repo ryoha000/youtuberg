@@ -13,5 +13,3 @@ export type CompareResultPixel = { type: 'comparePixel', time: number, result: n
 export type End = { type: 'end' }
 
 export type ImageInfo = { time: number, width: number, height: number, data: number[] }
-type Valueof<T> = T[keyof T]
-export type Handler<T extends { 'type': string }> = { [key in Valueof<Pick<T, 'type'>>]: (args: T & { [T['type']]: key }) => void }
