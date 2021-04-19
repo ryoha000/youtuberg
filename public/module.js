@@ -1,5 +1,3 @@
-const version = 10001;
-
 class ModuleClass {
 
   locateFile(baseName, _) {
@@ -8,7 +6,7 @@ class ModuleClass {
 
   instantiateWasm(imports, callback) {
     return new Promise(resolve => {
-      instantiateCachedURL(version, this.locateFile('cv-wasm.wasm'), imports)
+      instantiateCachedURL(this.locateFile('cv-wasm.wasm'), imports)
         .then(instance => {
           callback(instance)
           resolve()
