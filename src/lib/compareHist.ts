@@ -5,7 +5,7 @@ const compare = (cv: OpenCV, callback: (msg: ToBackgroundFromWebWorkerEvent) => 
   const start = performance.now()
   console.log('start', start)
 
-  const { width, height } = msg.img1
+  const { width, height, time } = msg.img1
   if (width !== msg.img2.width || height !== msg.img2.height) return 1
   const img1Raw = cv.matFromArray(width, height, cv.CV_8UC4, msg.img1.data)
   const img1MV = new cv.MatVector()
@@ -22,7 +22,7 @@ const compare = (cv: OpenCV, callback: (msg: ToBackgroundFromWebWorkerEvent) => 
   const result = cv.compareHist(img1Hist, img2Hist, cv.HISTCMP_CORREL)
   console.log('result', result)
 
-  callback({ type: 'compare', result });
+  callback({ type: 'compareHist', time, result });
   console.log('postMessage')
   img1Raw.delete()
   img1Hist.delete()
