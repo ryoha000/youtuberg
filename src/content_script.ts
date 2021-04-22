@@ -1,33 +1,77 @@
 import * as c from './lib/canvas'
 import { ToBackgroundFromContent, ToContentFromBackground } from './lib/typing/message';
 import { convertToGray } from './use/contentHandler';
+
+import Tesseract from 'tesseract.js';
+
+const ocrBlob = (blob: Blob) => {
+  const start = performance.now()
+  Tesseract.recognize(
+    blob,
+    'jpn',
+    { logger: m => console.log(m) }
+  ).then(({ data: { text } }) => {
+    console.log(text);
+    console.log('end', performance.now() - start)
+  })
+}
+
 try {
+  const tag = `
+  <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="0%" height="0%" id="sharpenSVG">
+    <filter id="Sharpen">
+      <feConvolveMatrix order="3 3" preserveAlpha="true" kernelMatrix="0 -10000 0 -10000 100000 -10000 0 -10000 0"></feConvolveMatrix>
+    </filter>
+  </svg>
+  `
+  const dom = (new DOMParser().parseFromString(tag, 'text/html')).getElementById('sharpenSVG')!
+  document.body.appendChild(dom)
   const $video = c.getVideoElement()
   const $canvas = c.setupCanvas()
   let time = 0
-  const TIME_SECOND = 1
+  const videoRect = $video.getClientRects()
+  $canvas.width = videoRect[0].width
+  $canvas.height = videoRect[0].height
+  const TIME_SECOND = 2
 
   setTimeout(async () => {
     $video.pause()
-    const videoRect = $video.getClientRects()
-    $canvas.width = videoRect[0].width
-    $canvas.height = videoRect[0].height
-    $video.currentTime = 0
+    $canvas.getContext('2d')!.filter = 'contrast(100000000000000000000000000%) grayscale(1)'
+    // $canvas.style.filter = 'url(#Sharpen) contrast(100000000000000000000000000%) grayscale(1)'
+    c.captureVideoToCanvas($video, $canvas)
+    c.sharping($canvas)
+    const start = performance.now()
+    c.laplacianFilter($canvas)
+    console.log(`end laplacian ${performance.now() - start}ms`)
 
-    const duration = $video.duration
-    for (let i = 0; i < duration / TIME_SECOND; i++) {
-      await send('enque')
-      const seekPromise = new Promise(resolve => {
-        $video.addEventListener('seeked', resolve, { once: true })
+    c.getBlobURL($canvas).then(url => {
+      fetch(url).then(v => v.blob()).then(blob => {
+        // @ts-ignore
+        blob['name'] = 'a.png'
+        ocrBlob(blob)
       })
-      time += TIME_SECOND
-      $video.currentTime += TIME_SECOND
-      await seekPromise
-    }
-    setTimeout(() => {
-      postMessageToBackground({ type: 'end' })
-      console.log('end')
-    }, 1000);
+    })
+    // setup($canvas)
+    // c.laplacianFilter($canvas)
+
+    // $video.currentTime = 0
+
+    // send('convertToGray')
+
+    // const duration = $video.duration
+    // for (let i = 0; i < duration / TIME_SECOND; i++) {
+    //   await send('enque')
+    //   const seekPromise = new Promise(resolve => {
+    //     $video.addEventListener('seeked', resolve, { once: true })
+    //   })
+    //   time += TIME_SECOND
+    //   $video.currentTime += TIME_SECOND
+    //   await seekPromise
+    // }
+    // setTimeout(() => {
+    //   postMessageToBackground({ type: 'end' })
+    //   console.log('end')
+    // }, 1000);
   }, 2000);
   const send = (type: Valueof<Pick<ToBackgroundFromContent, 'type'>>) => {
     return new Promise((resolve) => {
@@ -51,8 +95,18 @@ try {
     switch(msg.type) {
       case 'convertToGray':
         convertToGray($canvas)(msg);
+        c.getBlobURL($canvas).then(url => {
+          fetch(url).then(v => v.blob()).then(blob => {
+            // @ts-ignore
+            blob['name'] = 'a.png'
+            ocrBlob(blob)
+          })
+        })
+        break
+      case 'compareResult':
         break
       default:
+        const _exhaustiveCheck: never = msg
     }
     sendResponse()
     return true

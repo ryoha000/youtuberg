@@ -10,7 +10,8 @@
   "author": "ryoha",
   "license": "ISC",
   "dependencies": {
-    "esbuild": "^0.11.11"
+    "esbuild": "^0.11.11",
+    "tesseract.js": "^2.1.4"
   },
   "devDependencies": {
     "@types/node": "^14.14.41",
