@@ -2,20 +2,6 @@ import * as c from './lib/canvas'
 import { ToBackgroundFromContent, ToContentFromBackground } from './lib/typing/message';
 import { convertToGray } from './use/contentHandler';
 
-import Tesseract from 'tesseract.js';
-
-const ocrBlob = (blob: Blob) => {
-  const start = performance.now()
-  Tesseract.recognize(
-    blob,
-    'jpn',
-    { logger: m => console.log(m) }
-  ).then(({ data: { text } }) => {
-    console.log(text);
-    console.log('end', performance.now() - start)
-  })
-}
-
 try {
   const tag = `
   <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="0%" height="0%" id="sharpenSVG">
@@ -44,13 +30,6 @@ try {
     c.laplacianFilter($canvas)
     console.log(`end laplacian ${performance.now() - start}ms`)
 
-    c.getBlobURL($canvas).then(url => {
-      fetch(url).then(v => v.blob()).then(blob => {
-        // @ts-ignore
-        blob['name'] = 'a.png'
-        ocrBlob(blob)
-      })
-    })
     // setup($canvas)
     // c.laplacianFilter($canvas)
 
@@ -95,13 +74,6 @@ try {
     switch(msg.type) {
       case 'convertToGray':
         convertToGray($canvas)(msg);
-        c.getBlobURL($canvas).then(url => {
-          fetch(url).then(v => v.blob()).then(blob => {
-            // @ts-ignore
-            blob['name'] = 'a.png'
-            ocrBlob(blob)
-          })
-        })
         break
       case 'compareResult':
         break
