@@ -18,17 +18,15 @@ try {
   const videoRect = $video.getClientRects()
   $canvas.width = videoRect[0].width
   $canvas.height = videoRect[0].height
-  const TIME_SECOND = 2
+  const TIME_SECOND = 1
 
   setTimeout(async () => {
     $video.pause()
     $canvas.getContext('2d')!.filter = 'contrast(100000000000000000000000000%) grayscale(1)'
-    // $canvas.style.filter = 'url(#Sharpen) contrast(100000000000000000000000000%) grayscale(1)'
-    c.captureVideoToCanvas($video, $canvas)
-    c.sharping($canvas)
-    const start = performance.now()
-    c.laplacianFilter($canvas)
-    console.log(`end laplacian ${performance.now() - start}ms`)
+
+    // c.captureVideoToCanvas($video, $canvas)
+    // c.sharping($canvas)
+    // c.laplacianFilter($canvas)
 
     // setup($canvas)
     // c.laplacianFilter($canvas)
@@ -37,16 +35,33 @@ try {
 
     // send('convertToGray')
 
-    // const duration = $video.duration
-    // for (let i = 0; i < duration / TIME_SECOND; i++) {
-    //   await send('enque')
-    //   const seekPromise = new Promise(resolve => {
-    //     $video.addEventListener('seeked', resolve, { once: true })
-    //   })
-    //   time += TIME_SECOND
-    //   $video.currentTime += TIME_SECOND
-    //   await seekPromise
-    // }
+    const sharpArr = []
+    const laplacianArr = []
+    const captureArr = []
+    const duration = $video.duration
+    for (let i = 0; i < duration / TIME_SECOND; i++) {
+      // await send('enque')
+      const seekPromise = new Promise(resolve => {
+        $video.addEventListener('seeked', resolve, { once: true })
+      })
+      let start = performance.now()
+      c.captureVideoToCanvas($video, $canvas)
+      captureArr.push(performance.now() - start)
+      start = performance.now()
+      c.sharping($canvas)
+      sharpArr.push(performance.now() - start)
+      start = performance.now()
+      c.laplacianFilter($canvas)
+      laplacianArr.push(performance.now() - start)
+      // console.log(`end laplacian ${performance.now() - start}ms`)
+      time += TIME_SECOND
+      $video.currentTime += TIME_SECOND
+      await seekPromise
+    }
+    console.log('capture avg', captureArr.reduce((acc, cur) => acc + cur, 0) / captureArr.length)
+    console.log('sharp avg', sharpArr.reduce((acc, cur) => acc + cur, 0) / sharpArr.length)
+    console.log('laplacian avg', laplacianArr.reduce((acc, cur) => acc + cur, 0) / laplacianArr.length)
+
     // setTimeout(() => {
     //   postMessageToBackground({ type: 'end' })
     //   console.log('end')

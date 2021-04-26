@@ -15,3 +15,4 @@ export type End = { type: 'end' }
 export type OCR = { type: 'ocr', url: string }
 
 export type ImageInfo = { time: number, width: number, height: number, data: number[] }
+export type Block = { row: number, col: number, score: number }

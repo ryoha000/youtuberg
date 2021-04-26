@@ -12,7 +12,8 @@ export const setupCanvas = () => {
 }
 
 export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanvasElement) => {
-  $canvas.getContext('2d')?.drawImage($video, 0, 0, $canvas.width, $canvas.height)
+  const ratio = 0.1
+  $canvas.getContext('2d')?.drawImage($video, $canvas.width * ratio, $canvas.height * ratio, $canvas.width * (1 - ratio * 2), $canvas.height * (1 - ratio), $canvas.width * ratio, $canvas.height * ratio, $canvas.width * (1 - ratio * 2), $canvas.height * (1 - ratio))
 }
 
 export const getVideoElement = () => {
@@ -31,6 +32,7 @@ export const getBlobURL = ($canvas: HTMLCanvasElement) => {
   })
 }
 
+import { getBlockGroups, getBlocks, getMergedLongest, getSide } from './block'
 export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
   const ctx = $canvas.getContext('2d')
   if (!ctx) throw 'failed get 2d context'
@@ -76,7 +78,99 @@ export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
       outData[alphaIndex] = imageData.data[alphaIndex];
     }
   }
-  ctx.putImageData(out, 0, 0);
+  const side = getSide(imageData.width)
+  const blocks = getBlocks(outData, imageData.width, imageData.height, side)
+  let blockGroups = getBlockGroups(blocks, imageData.width, imageData.height, side, side * side * 0.175)
+  function getRandomInt(max: number) {
+    return Math.floor(Math.random() * max);
+  }
+
+  // const sleep = (msec: number) => new Promise(resolve => setTimeout(resolve, msec))
+  // setTimeout(async () => {
+    const start = performance.now()
+    let longest = getMergedLongest(blockGroups, 2)
+    blockGroups = [...blockGroups, longest]
+    longest = getMergedLongest(blockGroups, 2)
+    for (let aa = 0; aa < 2; aa++) {
+      // await sleep(300)
+      blockGroups = [...blockGroups, longest]
+      longest = getMergedLongest(blockGroups, 1)
+    }
+    const r = getRandomInt(255)
+    const g = getRandomInt(255)
+    const b = getRandomInt(255)
+    for (const block of longest.blocks) {
+      for (let k = block.row * side; k < Math.min((block.row + 1) * side, imageData.height); k++) {
+        for (let l = block.col * side; l < Math.min((block.col + 1) * side, imageData.width); l++) {
+          outData[(k * imageData.width + l) * 4 + 0] = r
+          outData[(k * imageData.width + l) * 4 + 1] = g
+          outData[(k * imageData.width + l) * 4 + 2] = b
+          outData[(k * imageData.width + l) * 4 + 3] = 255
+        }
+      }
+    }
+    ctx.putImageData(out, 0, 0);
+    console.log('end merged', `${performance.now() - start}ms`)
+  // }, 2000);
+
+  // for (const bg of blockGroups) {
+  //   const r = getRandomInt(255)
+  //   const g = getRandomInt(255)
+  //   const b = getRandomInt(255)
+  //   for (const block of bg.blocks) {
+  //     for (let k = block.row * side; k < Math.min((block.row + 1) * side, imageData.height); k++) {
+  //       for (let l = block.col * side; l < Math.min((block.col + 1) * side, imageData.width); l++) {
+  //         outData[(k * imageData.width + l) * 4 + 0] = r
+  //         outData[(k * imageData.width + l) * 4 + 1] = g
+  //         outData[(k * imageData.width + l) * 4 + 2] = b
+  //         outData[(k * imageData.width + l) * 4 + 3] = 255
+  //       }
+  //     }
+  //   }
+  // }
+  // ctx.putImageData(out, 0, 0);
+
+  // fill(outData, imageData.width, imageData.height)
+}
+
+const fill = (data: Uint8ClampedArray, width: number, height: number) => {
+  const tanni = Math.ceil(width * 0.025)
+  const sikiiti = 60
+  const result = []
+  for (let i = 0; i < Math.ceil(height / tanni); i++) {
+    for (let j = 0; j < Math.ceil(width / tanni); j++) {
+      let whiteNum = 0
+      for (let k = i * tanni; k < Math.min((i + 1) * tanni, height); k++) {
+        for (let l = j * tanni; l < Math.min((j + 1) * tanni, width); l++) {
+          if (data[(k * width + l) * 4 + 0] === 255 &&
+            data[(k * width + l) * 4 + 1] === 255 &&
+            data[(k * width + l) * 4 + 2] === 255 &&
+            data[(k * width + l) * 4 + 3] === 255
+          ) {
+            whiteNum++
+          }
+        }
+      }
+      console.log(whiteNum / (tanni * tanni))
+      if (whiteNum > tanni * tanni * 0.50) continue
+      result.push({ i, j, whiteNum })
+    }
+  }
+  result.sort((a, b) => b.whiteNum - a.whiteNum)
+  let count = 0
+  for (const { i, j, whiteNum } of result) {
+    count++
+    // if (count > sikiiti) break
+    if (whiteNum < tanni * tanni * 0.175) break
+    for (let k = i * tanni; k < Math.min((i + 1) * tanni, height); k++) {
+      for (let l = j * tanni; l < Math.min((j + 1) * tanni, width); l++) {
+        data[(k * width + l) * 4 + 0] = 255
+        data[(k * width + l) * 4 + 1] = 255
+        data[(k * width + l) * 4 + 2] = 255
+        data[(k * width + l) * 4 + 3] = 255
+      }
+    }
+  }
 }
 
 const kernel = [
@@ -86,7 +180,6 @@ const kernel = [
 ].map(v => v * 10)
 
 export const sharping = ($canvas: HTMLCanvasElement) => {
-  const start = performance.now()
   const ctx = $canvas.getContext('2d')
   if (!ctx) throw 'failed get 2d context'
   const width = $canvas.width
@@ -101,7 +194,6 @@ export const sharping = ($canvas: HTMLCanvasElement) => {
       result.data[(i * width + j) * 4 + 3] = imageData.data[(i * width + j) * 4 + 3]
     }
   }
-  console.log('sharping end', `${performance.now() - start}ms`)
   ctx.putImageData(result, 0, 0)
 }
 
