@@ -1,5 +1,4 @@
-export const findContrours = (scores: number[], rows: number, cols: number, threshold: number) => {
-  const contrours: number[] = new Array(rows * cols)
+export const findContrours = (scores: number[], rows: number, cols: number, labels: number[], contrours: number[], minThreshold: number, maxThreshold: number) => {
   let groupId = 1
 
   // 周囲の有効なBlockのindexをとってくる関数
@@ -18,15 +17,15 @@ export const findContrours = (scores: number[], rows: number, cols: number, thre
     return result
   }
 
-  for (let i = 0; i < rows; i++) {
+  for (let i = 0; i < scores.length; i++) {
     // もう、このマスに関係するGroupが探索されてたらスキップ
-    if (contrours[i] === 0) continue
-    contrours[i] = 0
+    if (labels[i] === 0 || labels[i]) continue
+    labels[i] = 0
 
-    if (scores[i] < threshold) continue
+    if (scores[i] < minThreshold || scores[i] > maxThreshold) continue
 
     // 閾値以上の時
-    contrours[i] = groupId
+    labels[i] = groupId
     let toCheckIndexes = getAroundBlockIndexes(i)
 
     while (true) {
@@ -34,16 +33,34 @@ export const findContrours = (scores: number[], rows: number, cols: number, thre
       const newToCheckIndexes: number[] = []
       // 上下左右で閾値を超えているものがあるか探索
       for (let j = 0; j < toCheckIndexes.length; j++) {
-        if (contrours[toCheckIndexes[j]] === 0) continue
-        contrours[toCheckIndexes[j]] = 0
+        if (labels[toCheckIndexes[j]] === 0 || labels[toCheckIndexes[j]]) continue
+        labels[toCheckIndexes[j]] = 0
 
-        if (scores[toCheckIndexes[j]] < threshold) continue
-        contrours[toCheckIndexes[j]] = groupId
+        if (scores[toCheckIndexes[j]] < minThreshold || scores[toCheckIndexes[j]] > maxThreshold) continue
+        labels[toCheckIndexes[j]] = groupId
         newToCheckIndexes.push(...getAroundBlockIndexes(toCheckIndexes[j]))
       }
       toCheckIndexes = newToCheckIndexes
     }
     groupId += 1
   }
-  return contrours
+
+  for (let i = 0; i < labels.length; i++) {
+    contrours[i] = 0
+    if (labels[i] === 0) continue
+    const indexes = getAroundBlockIndexes(i)
+    if (indexes.length !== 4) {
+      contrours[i] = 1
+    }
+    let isEdge = false
+    for (let j = 0; j < indexes.length; j++) {
+      if (labels[indexes[j]] === 0) {
+        isEdge = true
+        break
+      }
+    }
+    if (isEdge) {
+      contrours[i] = 1
+    }
+  }
 }
