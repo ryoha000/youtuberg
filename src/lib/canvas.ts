@@ -35,6 +35,7 @@ export const getBlobURL = ($canvas: HTMLCanvasElement) => {
 
 import { fillMissingBlock, getMergedContrours, getScores, getSide } from './block'
 import { findContrours } from './contrours'
+import { convolve3x3 } from './convolve'
 export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
   const filterStart = performance.now()
   const ctx = $canvas.getContext('2d')
@@ -138,32 +139,11 @@ export const sharping = ($canvas: HTMLCanvasElement) => {
   ].map(v => v * 10)
   for (let i = 0; i < height; i++) {
     for (let j = 0; j < width; j++) {
-      result.data[(i * width + j) * 4 + 0] = getMatrix(imageData.data, kernel, i, width, j, 0)
-      result.data[(i * width + j) * 4 + 1] = getMatrix(imageData.data, kernel, i, width, j, 1)
-      result.data[(i * width + j) * 4 + 2] = getMatrix(imageData.data, kernel, i, width, j, 2)
+      result.data[(i * width + j) * 4 + 0] = convolve3x3(imageData.data, kernel, i, width, j, 0)
+      result.data[(i * width + j) * 4 + 1] = convolve3x3(imageData.data, kernel, i, width, j, 1)
+      result.data[(i * width + j) * 4 + 2] = convolve3x3(imageData.data, kernel, i, width, j, 2)
       result.data[(i * width + j) * 4 + 3] = imageData.data[(i * width + j) * 4 + 3]
     }
   }
   ctx.putImageData(result, 0, 0)
-}
-
-const getEle = (data: Uint8ClampedArray, width: number, suffix: number, row: number, col: number) => {
-  if (row >= 0 && col >= 0) {
-    return data[(row * width + col) * 4 + suffix]
-  }
-  return 0
-}
-
-const getMatrix = (data: Uint8ClampedArray, kernel: number[], i: number, width: number, j: number, suffix: number) => {
-  return (
-      kernel[0] * getEle(data, width, suffix, i - 1, j - 1)
-    + kernel[1] * getEle(data, width, suffix, i - 1, j    )
-    + kernel[2] * getEle(data, width, suffix, i - 1, j + 1)
-    + kernel[3] * getEle(data, width, suffix, i    , j - 1)
-    + kernel[4] * getEle(data, width, suffix, i    , j    )
-    + kernel[5] * getEle(data, width, suffix, i    , j + 1)
-    + kernel[6] * getEle(data, width, suffix, i + 1, j - 1)
-    + kernel[7] * getEle(data, width, suffix, i + 1, j    )
-    + kernel[8] * getEle(data, width, suffix, i + 1, j + 1)
-  )
 }
