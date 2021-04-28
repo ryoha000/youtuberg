@@ -47,12 +47,47 @@ export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
 
   for (let i = 0; i < imageData.height; i++) {
     for (let j = 0; j < imageData.width; j++) {
-      outData[(i * imageData.width + j) * 4 + 0] = convolve3x3(imageData.data, kernel, i, imageData.width, j, 0)
-      outData[(i * imageData.width + j) * 4 + 1] = convolve3x3(imageData.data, kernel, i, imageData.width, j, 1)
-      outData[(i * imageData.width + j) * 4 + 2] = convolve3x3(imageData.data, kernel, i, imageData.width, j, 2)
+      outData[(i * imageData.width + j) * 4 + 0] = convolve3x3(imageData.data, kernel, i, imageData.width, imageData.height, j, 0)
+      outData[(i * imageData.width + j) * 4 + 1] = convolve3x3(imageData.data, kernel, i, imageData.width, imageData.height, j, 1)
+      outData[(i * imageData.width + j) * 4 + 2] = convolve3x3(imageData.data, kernel, i, imageData.width, imageData.height, j, 2)
       outData[(i * imageData.width + j) * 4 + 3] = imageData.data[(i * imageData.width + j) * 4 + 3]
     }
   }
+
+  // true => white, false => black
+  const binary = []
+  for (let i = 0; i < imageData.height; i++) {
+    for (let j = 0; j < imageData.width; j++) {
+      if (
+        outData[(i * imageData.width + j) * 4 + 0] > 200 &&
+        outData[(i * imageData.width + j) * 4 + 1] > 200 &&
+        outData[(i * imageData.width + j) * 4 + 2] > 200
+      ) {
+        binary.push(true)
+      } else {
+        binary.push(false)
+      }
+    }
+  }
+
+  for (let i = 0; i < binary.length; i++) {
+    if (binary[i]) {
+      outData[i * 4 + 0] = 255
+      outData[i * 4 + 1] = 255
+      outData[i * 4 + 2] = 255
+    } else {
+      outData[i * 4 + 0] = 0
+      outData[i * 4 + 1] = 0
+      outData[i * 4 + 2] = 0
+    }
+    outData[i * 4 + 3] = 255
+  }
+
+  // let isBinary = true
+  // for (let i = 0; i < outData.length; i++) {
+  //   outData[i] = imageData.data[i]
+  // }
+  // console.log('isBinary', isBinary)
   // console.log('end laplacian filter', (performance.now() - filterStart) / 1000)
 
   // const side = getSide(imageData.width)
@@ -73,27 +108,27 @@ export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
     return Math.floor(Math.random() * max);
   }
 
-  const groupIdColor: [number, number, number][] = []
-  for (let i = 0; i < labels.length; i++) {
-    if (labels[i] === 0) continue
-    if (!groupIdColor[labels[i]]) {
-      const r = getRandomInt(255)
-      const g = getRandomInt(255)
-      const b = getRandomInt(255)
-      groupIdColor[labels[i]] = [r, g, b]
-    }
-    const [r, g, b] = groupIdColor[labels[i]]
-    const row = Math.floor(i / cols)
-    const col = i % cols
-    for (let k = row * side; k < Math.min((row + 1) * side, imageData.height); k++) {
-      for (let l = col * side; l < Math.min((col + 1) * side, imageData.width); l++) {
-        outData[(k * imageData.width + l) * 4 + 0] = r
-        outData[(k * imageData.width + l) * 4 + 1] = g
-        outData[(k * imageData.width + l) * 4 + 2] = b
-        outData[(k * imageData.width + l) * 4 + 3] = 255
-      }
-    }
-  }
+  // const groupIdColor: [number, number, number][] = []
+  // for (let i = 0; i < labels.length; i++) {
+  //   if (labels[i] === 0) continue
+  //   if (!groupIdColor[labels[i]]) {
+  //     const r = getRandomInt(255)
+  //     const g = getRandomInt(255)
+  //     const b = getRandomInt(255)
+  //     groupIdColor[labels[i]] = [r, g, b]
+  //   }
+  //   const [r, g, b] = groupIdColor[labels[i]]
+  //   const row = Math.floor(i / cols)
+  //   const col = i % cols
+  //   for (let k = row * side; k < Math.min((row + 1) * side, imageData.height); k++) {
+  //     for (let l = col * side; l < Math.min((col + 1) * side, imageData.width); l++) {
+  //       outData[(k * imageData.width + l) * 4 + 0] = r
+  //       outData[(k * imageData.width + l) * 4 + 1] = g
+  //       outData[(k * imageData.width + l) * 4 + 2] = b
+  //       outData[(k * imageData.width + l) * 4 + 3] = 255
+  //     }
+  //   }
+  // }
   ctx.putImageData(out, 0, 0);
 }
 
@@ -111,9 +146,9 @@ export const sharping = ($canvas: HTMLCanvasElement) => {
   ].map(v => v * 10)
   for (let i = 0; i < height; i++) {
     for (let j = 0; j < width; j++) {
-      result.data[(i * width + j) * 4 + 0] = convolve3x3(imageData.data, kernel, i, width, j, 0)
-      result.data[(i * width + j) * 4 + 1] = convolve3x3(imageData.data, kernel, i, width, j, 1)
-      result.data[(i * width + j) * 4 + 2] = convolve3x3(imageData.data, kernel, i, width, j, 2)
+      result.data[(i * width + j) * 4 + 0] = convolve3x3(imageData.data, kernel, i, width, height, j, 0)
+      result.data[(i * width + j) * 4 + 1] = convolve3x3(imageData.data, kernel, i, width, height, j, 1)
+      result.data[(i * width + j) * 4 + 2] = convolve3x3(imageData.data, kernel, i, width, height, j, 2)
       result.data[(i * width + j) * 4 + 3] = imageData.data[(i * width + j) * 4 + 3]
     }
   }
