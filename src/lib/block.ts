@@ -118,3 +118,22 @@ const updateContrours = (labels: number[], contrours: number[], groupId: number,
     }
   }
 }
+
+export const fillMissingBlock = (labels: number[], rows: number, cols: number) => {
+  const MAX_DIFF = 3
+  for (let row = 0; row < rows; row++) {
+    let lastFilledCol = cols
+    let lastFilledGroup = -1
+    for (let col = 0; col < cols; col++) {
+      if (labels[row * cols + col] !== 0) {
+        if (col - lastFilledCol - 1 > 0 && col - lastFilledCol - 1 <= MAX_DIFF && lastFilledGroup === labels[row * cols + col]) {
+          for (let i = row * cols + lastFilledCol + 1; i < row * cols + col; i ++) {
+            labels[i] = lastFilledGroup
+          }
+        }
+        lastFilledGroup = labels[row * cols + col]
+        lastFilledCol = col
+      }
+    }
+  }
+}
