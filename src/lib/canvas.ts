@@ -13,7 +13,8 @@ export const setupCanvas = () => {
 
 export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanvasElement) => {
   const ratio = 0.1
-  $canvas.getContext('2d')?.drawImage($video, $canvas.width * ratio, $canvas.height * ratio, $canvas.width * (1 - ratio * 2), $canvas.height * (1 - ratio), $canvas.width * ratio, $canvas.height * ratio, $canvas.width * (1 - ratio * 2), $canvas.height * (1 - ratio))
+  const cutTop = 0
+  $canvas.getContext('2d')?.drawImage($video, $canvas.width * ratio, $canvas.height * cutTop, $canvas.width * (1 - ratio * 2), $canvas.height * (1 - cutTop), $canvas.width * ratio, $canvas.height * cutTop, $canvas.width * (1 - ratio * 2), $canvas.height * (1 - cutTop))
 }
 
 export const getVideoElement = () => {
@@ -32,8 +33,10 @@ export const getBlobURL = ($canvas: HTMLCanvasElement) => {
   })
 }
 
-import { getBlockGroups, getBlocks, getMergedLongest, getSide } from './block'
+import { fillMissingBlock, getMergedContrours, getScores, getSide } from './block'
+import { findContrours } from './contrours'
 export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
+  const filterStart = performance.now()
   const ctx = $canvas.getContext('2d')
   if (!ctx) throw 'failed get 2d context'
   const imageData = ctx.getImageData(0, 0, $canvas.width, $canvas.height)
@@ -78,48 +81,63 @@ export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
       outData[alphaIndex] = imageData.data[alphaIndex];
     }
   }
+  // console.log('end laplacian filter', (performance.now() - filterStart) / 1000)
+
   const side = getSide(imageData.width)
-  const blocks = getBlocks(outData, imageData.width, imageData.height, side)
-  let blockGroups = getBlockGroups(blocks, imageData.width, imageData.height, side, side * side * 0.175)
+  const rows = Math.ceil(imageData.height / side)
+  const cols = Math.ceil(imageData.width / side)
+  const scores = getScores(outData, imageData.width, imageData.height, rows, cols, side)
+  const labels = new Array(rows * cols)
+  const contrours = new Array(rows * cols)
+  findContrours(scores, rows, cols, labels, contrours, side * side * 0.12, side * side * 0.30)
+  getMergedContrours(labels, contrours, cols)
+  fillMissingBlock(labels, rows, cols)
+
+  // console.log('end merge も', (performance.now() - filterStart) / 1000)
+
   function getRandomInt(max: number) {
     return Math.floor(Math.random() * max);
   }
 
-  // const sleep = (msec: number) => new Promise(resolve => setTimeout(resolve, msec))
-  // setTimeout(async () => {
-    const start = performance.now()
-    let longest = getMergedLongest(blockGroups, 2)
-    blockGroups = [...blockGroups, longest]
-    longest = getMergedLongest(blockGroups, 2)
-    for (let aa = 0; aa < 2; aa++) {
-      // await sleep(300)
-      blockGroups = [...blockGroups, longest]
-      longest = getMergedLongest(blockGroups, 1)
+  const groupIdColor: [number, number, number][] = []
+  for (let i = 0; i < labels.length; i++) {
+    if (labels[i] === 0) continue
+    if (!groupIdColor[labels[i]]) {
+      const r = getRandomInt(255)
+      const g = getRandomInt(255)
+      const b = getRandomInt(255)
+      groupIdColor[labels[i]] = [r, g, b]
     }
-    const r = getRandomInt(255)
-    const g = getRandomInt(255)
-    const b = getRandomInt(255)
-    for (const block of longest.blocks) {
-      for (let k = block.row * side; k < Math.min((block.row + 1) * side, imageData.height); k++) {
-        for (let l = block.col * side; l < Math.min((block.col + 1) * side, imageData.width); l++) {
-          outData[(k * imageData.width + l) * 4 + 0] = r
-          outData[(k * imageData.width + l) * 4 + 1] = g
-          outData[(k * imageData.width + l) * 4 + 2] = b
-          outData[(k * imageData.width + l) * 4 + 3] = 255
-        }
+    const [r, g, b] = groupIdColor[labels[i]]
+    const row = Math.floor(i / cols)
+    const col = i % cols
+    for (let k = row * side; k < Math.min((row + 1) * side, imageData.height); k++) {
+      for (let l = col * side; l < Math.min((col + 1) * side, imageData.width); l++) {
+        outData[(k * imageData.width + l) * 4 + 0] = r
+        outData[(k * imageData.width + l) * 4 + 1] = g
+        outData[(k * imageData.width + l) * 4 + 2] = b
+        outData[(k * imageData.width + l) * 4 + 3] = 255
       }
     }
-    ctx.putImageData(out, 0, 0);
-    console.log('end merged', `${performance.now() - start}ms`)
-  // }, 2000);
+  }
+  ctx.putImageData(out, 0, 0);
 
-  // for (const bg of blockGroups) {
-  //   const r = getRandomInt(255)
-  //   const g = getRandomInt(255)
-  //   const b = getRandomInt(255)
-  //   for (const block of bg.blocks) {
-  //     for (let k = block.row * side; k < Math.min((block.row + 1) * side, imageData.height); k++) {
-  //       for (let l = block.col * side; l < Math.min((block.col + 1) * side, imageData.width); l++) {
+  // setTimeout(() => {
+  //   fillMissingBlock(labels, rows, cols)
+  //   const groupIdColor: [number, number, number][] = []
+  //   for (let i = 0; i < labels.length; i++) {
+  //     if (labels[i] === 0) continue
+  //     if (!groupIdColor[labels[i]]) {
+  //       const r = getRandomInt(255)
+  //       const g = getRandomInt(255)
+  //       const b = getRandomInt(255)
+  //       groupIdColor[labels[i]] = [r, g, b]
+  //     }
+  //     const [r, g, b] = groupIdColor[labels[i]]
+  //     const row = Math.floor(i / cols)
+  //     const col = i % cols
+  //     for (let k = row * side; k < Math.min((row + 1) * side, imageData.height); k++) {
+  //       for (let l = col * side; l < Math.min((col + 1) * side, imageData.width); l++) {
   //         outData[(k * imageData.width + l) * 4 + 0] = r
   //         outData[(k * imageData.width + l) * 4 + 1] = g
   //         outData[(k * imageData.width + l) * 4 + 2] = b
@@ -127,8 +145,8 @@ export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
   //       }
   //     }
   //   }
-  // }
-  // ctx.putImageData(out, 0, 0);
+  //   ctx.putImageData(out, 0, 0);
+  // }, 1000);
 
   // fill(outData, imageData.width, imageData.height)
 }
@@ -151,7 +169,6 @@ const fill = (data: Uint8ClampedArray, width: number, height: number) => {
           }
         }
       }
-      console.log(whiteNum / (tanni * tanni))
       if (whiteNum > tanni * tanni * 0.50) continue
       result.push({ i, j, whiteNum })
     }
