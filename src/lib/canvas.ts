@@ -44,42 +44,13 @@ export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
   const out = ctx.createImageData(imageData.width, imageData.height);
   const outData = out.data;
   const kernel = [1, 1, 1, 1, -8, 1, 1, 1, 1];
-  let y: number
-  let l: number
-  let ref = imageData.height - 1
-  let i: number
-  for (y = l = 1; 1 <= ref ? l < ref : l > ref; y = 1 <= ref ? ++l : --l) {
-    let x: number
-    let m: number
-    let ref1 = imageData.width - 1
-    for (x = m = 1; 1 <= ref1 ? m < ref1 : m > ref1; x = 1 <= ref1 ? ++m : --m) {
-      let c: number
-      let n: number
-      for (c = n = 0; n < 3; c = ++n) {
-        i = (y * imageData.width + x) * 4 + c;
-        let tmp = 0;
-        let dy: number
-        let o: number
-        for (dy = o = -1; o <= 1; dy = ++o) {
-          let dx: number
-          let p: number
-          for (dx = p = -1; p <= 1; dx = ++p) {
-            const kernelIndex = (dy + 1) * 3 + (dx + 1);
-            const dataIndex = ((y + dy) * imageData.width + (x + dx)) * 4 + c;
-            tmp += kernel[kernelIndex] * imageData.data[dataIndex];
-          }
-        }
-        if (tmp > 255) {
-          outData[i] = 255;
-        }
-        if (tmp < 0) {
-          outData[i] = 0;
-        } else {
-          outData[i] = tmp;
-        }
-      }
-      const alphaIndex = (y * imageData.width + x) * 4 + 3;
-      outData[alphaIndex] = imageData.data[alphaIndex];
+
+  for (let i = 0; i < imageData.height; i++) {
+    for (let j = 0; j < imageData.width; j++) {
+      outData[(i * imageData.width + j) * 4 + 0] = convolve3x3(imageData.data, kernel, i, imageData.width, j, 0)
+      outData[(i * imageData.width + j) * 4 + 1] = convolve3x3(imageData.data, kernel, i, imageData.width, j, 1)
+      outData[(i * imageData.width + j) * 4 + 2] = convolve3x3(imageData.data, kernel, i, imageData.width, j, 2)
+      outData[(i * imageData.width + j) * 4 + 3] = imageData.data[(i * imageData.width + j) * 4 + 3]
     }
   }
   // console.log('end laplacian filter', (performance.now() - filterStart) / 1000)
@@ -91,7 +62,8 @@ export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
   const scores = getScores(outData, imageData.width, imageData.height, rows, cols, side)
   const labels: number[] = new Array(rows * cols)
   const contrours: number[] = new Array(rows * cols)
-  findContrours(scores, rows, cols, labels, contrours, side * side * 0.12, side * side * 0.30)
+  findContrours(scores, rows, cols, labels, contrours, side * side * 0.12, 1)
+  // findContrours(scores, rows, cols, labels, contrours, side * side * 0.12, side * side * 0.30)
   // getMergedContrours(labels, contrours, cols)
   // fillMissingBlock(labels, rows, cols)
 
