@@ -1,6 +1,6 @@
 import { ConvertGray } from "../lib/typing/message";
 
-export const convertToGray = ($canvas: HTMLCanvasElement) => (msg: ConvertGray) => {
+export const convertToBinary = ($canvas: HTMLCanvasElement) => (msg: ConvertGray) => {
   console.log('response img from background')
   const { data, width, height } = msg
   $canvas.width = width
@@ -16,4 +16,5 @@ export const convertToGray = ($canvas: HTMLCanvasElement) => (msg: ConvertGray) 
     imgData.data[i] = data[i]
   }
   ctx.putImageData(imgData, 0, 0);
+  return data
 }

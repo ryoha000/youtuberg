@@ -17,7 +17,7 @@ worker.addEventListener('message', (ev: MessageEvent<ToBackgroundFromWebWorkerEv
     case 'initialize':
       isInitialised = true
       break
-    case 'convertToGray':
+    case 'convertToBinary':
       postMessageToContent(msg)
       break
     case 'compareHist':
@@ -44,7 +44,7 @@ chrome.runtime.onMessage.addListener<ToBackgroundFromContent>((msg, sender, send
     return true
   }
   switch(msg.type) {
-    case 'convertToGray':
+    case 'convertToBinary':
       postMessageToWebWorker(msg)
       break
     case 'enque':

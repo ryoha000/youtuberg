@@ -44,7 +44,7 @@ const compare = (cv: OpenCV, callback: (msg: ToBackgroundFromWebWorkerEvent) => 
   // const result = new cv.Mat()
   // cv.drawMatchesKnn(img1, img1KP, img2, img2KP, good, result)
 
-  // callback({ type: 'convertToGray', data: Array.from(result.data), width, height, time: 0 })
+  // callback({ type: 'convertToBinary', data: Array.from(result.data), width, height, time: 0 })
   callback({ type: 'compareFeature', time: msg.img1.time, result: len });
   console.log('postMessage')
   img1Raw.delete()

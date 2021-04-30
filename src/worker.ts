@@ -6,7 +6,7 @@ import compareP from './lib/comparePixel'
 import compareH from './lib/compareHist'
 declare var cv: OpenCV
 
-const convertToGray = (msg: ConvertGray) => {
+const convertToBinary = (msg: ConvertGray) => {
   const start = performance.now()
 
   const { data, width, height, time } = msg
@@ -22,7 +22,7 @@ const convertToGray = (msg: ConvertGray) => {
   cv.cvtColor(binary, result, cv.COLOR_GRAY2RGBA, 0)
 
   const resultData = Array.from(result.data);
-  postMessageToBackground({ type: 'convertToGray', time, data: resultData, width: width, height: height });
+  postMessageToBackground({ type: 'convertToBinary', time, data: resultData, width: width, height: height });
 
   imgRaw.delete()
   gray.delete()
@@ -36,8 +36,8 @@ addEventListener('message', (ev: MessageEvent<ToWebWorkerFromBackground>) => {
   const meta = ev.data;
   console.log('from background')
   switch (meta.type) {
-    case 'convertToGray':
-      convertToGray(meta)
+    case 'convertToBinary':
+      convertToBinary(meta)
       break
     case 'compare':
       // compareH(cv, postMessageToBackground, meta)

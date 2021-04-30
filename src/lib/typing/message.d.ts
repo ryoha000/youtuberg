@@ -4,7 +4,7 @@ export type ToBackgroundFromWebWorkerEvent = ConvertGray | Initialize | CompareR
 export type ToContentFromBackground = ConvertGray | CompareResult
 export type ToBackgroundFromContent = ConvertGray | Enque | End
 
-export type ConvertGray = { type: 'convertToGray' } & ImageInfo
+export type ConvertGray = { type: 'convertToBinary' } & ImageInfo
 export type Enque = { type: 'enque' } & ImageInfo
 export type Initialize = { type: 'initialize' }
 export type Compare = { type: 'compare', img1: ImageInfo, img2: ImageInfo }
