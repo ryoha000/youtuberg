@@ -42,6 +42,7 @@ export const findControursFromBinary = (scores: boolean[], rows: number, cols: n
   }
 
   let maxCols = 0
+  let maxColsId = 0
   for (let i = 0; i < scores.length; i++) {
     // もう、このマスに関係するGroupが探索されてたらスキップ
     if (labels[i] !== 0 && labels[i]) continue
@@ -77,12 +78,13 @@ export const findControursFromBinary = (scores: boolean[], rows: number, cols: n
     areas.push(area)
     if (maxCols < maxCol - minCol + 1) {
       maxCols = maxCol - minCol + 1
+      maxColsId = groupId
     }
     groupId += 1
   }
 
   setControursFromLabels()
 
-  return maxCols
+  return maxColsId
 }
 
