@@ -1,4 +1,4 @@
-import { CompareResultHist, CompareResultPixel, Enque, ToBackgroundFromContent, ToBackgroundFromWebWorkerEvent, ToContentFromBackground, ToWebWorkerFromBackground } from "./lib/typing/message";
+import { CompareResultFeature, CompareResultHist, CompareResultPixel, Enque, ToBackgroundFromContent, ToBackgroundFromWebWorkerEvent, ToContentFromBackground, ToWebWorkerFromBackground } from "./lib/typing/message";
 
 const worker = new Worker(chrome.runtime.getURL('worker.js'));
 let isInitialised = false
@@ -6,6 +6,7 @@ let tabId = ''
 const imgs: Enque[] = []
 const resHist: CompareResultHist[] = []
 const resPixel: CompareResultPixel[] = []
+const resFeature: CompareResultFeature[] = []
 const postMessageToWebWorker = (msg: ToWebWorkerFromBackground) => worker.postMessage(msg)
 const postMessageToContent = (msg: ToContentFromBackground) => chrome.tabs.sendMessage(tabId, msg, () => {})
 
@@ -24,6 +25,9 @@ worker.addEventListener('message', (ev: MessageEvent<ToBackgroundFromWebWorkerEv
       break
     case 'comparePixel':
       resPixel.push(msg)
+      break
+    case 'compareFeature':
+      resFeature.push(msg)
       break
     default:
       const _exhaustiveCheck: never = msg;
@@ -47,7 +51,7 @@ chrome.runtime.onMessage.addListener<ToBackgroundFromContent>((msg, sender, send
       imgs.push(msg)
       if (imgs.length === 2) {
         postMessageToWebWorker({ type: 'compare', img1: imgs[0], img2: imgs[1] })
-        imgs.pop()
+        imgs.shift()
       }
       break
     case 'end':
@@ -55,7 +59,8 @@ chrome.runtime.onMessage.addListener<ToBackgroundFromContent>((msg, sender, send
       setTimeout(() => {
         console.log(JSON.stringify(resHist))
         console.log(JSON.stringify(resPixel))
-      }, 2000);
+        console.log(JSON.stringify(resFeature))
+      }, 10000);
       break
     default:
       const _exhaustiveCheck: never = msg;

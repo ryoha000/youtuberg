@@ -1,7 +1,7 @@
 import { UserOption } from "./typing/option"
 
 export const getSide = (width: number, option?: UserOption) => {
-  const ratio = option?.sideRatio ?? 0.030
+  const ratio = option?.sideRatio ?? 0.025
   return  Math.ceil(width * ratio)
 }
 
@@ -68,52 +68,62 @@ const getLongestLabelId = (contrours: number[], cols: number, direction: 'rows' 
   return longestId
 }
 
-export const getMergedContrours = (labels: number[], contrours: number[], cols: number) => {
+export const getMergedContrours = (labels: number[], contrours: number[], scores: number[], cols: number, threshold: number) => {
   for (let i = 0; i < labels.length; i++) {
     if (contrours[i] === 0) continue
     /**
-     * ○○●○●○○
-     * ●●○○○●●
-     * ○○●○●○○
+     * ○○○●○●○○○
+     * ●●●○○○●●●
+     * ○○○●○●○○○
      * ●部分を探索
      */
     const groupId = labels[i]
     if (labels[i - cols - 1] && labels[i - cols - 1] !== groupId) {
-      updateContrours(labels, contrours, groupId, labels[i - cols - 1], i - 1, i - cols)
+      updateContrours(labels, contrours, scores, groupId, labels[i - cols - 1], threshold, i - 1, i - cols)
     }
     if (labels[i - cols + 1] && labels[i - cols + 1] !== groupId) {
-      updateContrours(labels, contrours, groupId, labels[i - cols + 1], i + 1, i - cols)
+      updateContrours(labels, contrours, scores, groupId, labels[i - cols + 1], threshold, i + 1, i - cols)
+    }
+    if (labels[i - 4] && labels[i - 4] !== groupId) {
+      updateContrours(labels, contrours, scores, groupId, labels[i - 4], threshold, i - 1, i - 2, i - 3)
     }
     if (labels[i - 3] && labels[i - 3] !== groupId) {
-      updateContrours(labels, contrours, groupId, labels[i - 3], i - 1, i - 2)
+      updateContrours(labels, contrours, scores, groupId, labels[i - 3], threshold, i - 1, i - 2)
     }
     if (labels[i - 2] && labels[i - 2] !== groupId) {
-      updateContrours(labels, contrours, groupId, labels[i - 2], i - 1)
+      updateContrours(labels, contrours, scores, groupId, labels[i - 2], threshold, i - 1)
     }
     if (labels[i + 2] && labels[i + 2] !== groupId) {
-      updateContrours(labels, contrours, groupId, labels[i + 2], i + 1)
+      updateContrours(labels, contrours, scores, groupId, labels[i + 2], threshold, i + 1)
     }
     if (labels[i + 3] && labels[i + 3] !== groupId) {
-      updateContrours(labels, contrours, groupId, labels[i + 3], i + 1, i + 2)
+      updateContrours(labels, contrours, scores, groupId, labels[i + 3], threshold, i + 1, i + 2)
+    }
+    if (labels[i + 4] && labels[i + 4] !== groupId) {
+      updateContrours(labels, contrours, scores, groupId, labels[i + 4], threshold, i + 1, i + 2, i + 3)
     }
     if (labels[i + cols - 1] && labels[i + cols - 1] !== groupId) {
-      updateContrours(labels, contrours, groupId, labels[i + cols - 1], i - 1, i + cols)
+      updateContrours(labels, contrours, scores, groupId, labels[i + cols - 1], threshold, i - 1, i + cols)
     }
     if (labels[i + cols + 1] && labels[i + cols + 1] !== groupId) {
-      updateContrours(labels, contrours, groupId, labels[i + cols + 1], i + 1, i + cols)
+      updateContrours(labels, contrours, scores, groupId, labels[i + cols + 1], threshold, i + 1, i + cols)
     }
   }
 }
 
-const updateContrours = (labels: number[], contrours: number[], groupId: number, beforeGroupId: number, ...buriedIndexes: number[]) => {
-  for (let j = 0; j < labels.length; j++) {
-    if (labels[j] === beforeGroupId) {
-      labels[j] = groupId
+const updateContrours = (labels: number[], contrours: number[], scores: number[], groupId: number, beforeGroupId: number, threshold: number, ...buriedIndexes: number[]) => {
+  let isOver = false
+  for (let i = 0; i < buriedIndexes.length; i++) {
+    if (scores[buriedIndexes[i]] > threshold) {
+      isOver = true
+      labels[buriedIndexes[i]] = groupId
+      contrours[buriedIndexes[i]] = 1
     }
-    for (let i = 0; i < buriedIndexes.length; i++) {
-      if (j === buriedIndexes[i]) {
+  }
+  if (isOver) {
+    for (let j = 0; j < labels.length; j++) {
+      if (labels[j] === beforeGroupId) {
         labels[j] = groupId
-        contrours[j] = 1
       }
     }
   }

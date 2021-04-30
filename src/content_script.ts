@@ -22,73 +22,74 @@ try {
 
   setTimeout(async () => {
     $video.pause()
+    $video.currentTime = 0
     $canvas.getContext('2d')!.filter = 'contrast(100000000000000000000000000%) grayscale(1)'
 
-    // c.captureVideoToCanvas($video, $canvas)
+    // const data = c.captureVideoToCanvas($video, $canvas)
+    // send('convertToGray', data)
     // c.sharping($canvas)
     // c.laplacianFilter($canvas)
 
     // setup($canvas)
     // c.laplacianFilter($canvas)
 
-    // $video.currentTime = 0
-
-    // send('convertToGray')
-
-    const sharpArr = []
-    const laplacianArr = []
-    const captureArr = []
     const duration = $video.duration
+    const sleep = (msec: number) => new Promise(resolve => setTimeout(resolve, msec))
     for (let i = 0; i < duration / TIME_SECOND; i++) {
       // await send('enque')
       const seekPromise = new Promise(resolve => {
         $video.addEventListener('seeked', resolve, { once: true })
       })
-      let start = performance.now()
-      c.captureVideoToCanvas($video, $canvas)
-      captureArr.push(performance.now() - start)
-      start = performance.now()
-      c.sharping($canvas)
-      sharpArr.push(performance.now() - start)
-      start = performance.now()
-      c.laplacianFilter($canvas)
-      laplacianArr.push(performance.now() - start)
-      // console.log(`end laplacian ${performance.now() - start}ms`)
-      time += TIME_SECOND
-      $video.currentTime += TIME_SECOND
-      await seekPromise
-    }
-    console.log('capture avg', captureArr.reduce((acc, cur) => acc + cur, 0) / captureArr.length)
-    console.log('sharp avg', sharpArr.reduce((acc, cur) => acc + cur, 0) / sharpArr.length)
-    console.log('laplacian avg', laplacianArr.reduce((acc, cur) => acc + cur, 0) / laplacianArr.length)
+      try {
+        const data = c.captureVideoToCanvas($video, $canvas)
+        console.log('filter shown')
+        // const data = c.sharping($canvas)
+        // await sleep(500)
+        // const data = c.laplacianFilter($canvas)
+        send('convertToGray', data)
+        time += TIME_SECOND
+        $video.currentTime += TIME_SECOND
+        await sleep(2000)
+        await seekPromise
+      } catch {
 
-    // setTimeout(() => {
-    //   postMessageToBackground({ type: 'end' })
-    //   console.log('end')
-    // }, 1000);
-  }, 2000);
-  const send = (type: Valueof<Pick<ToBackgroundFromContent, 'type'>>) => {
-    return new Promise((resolve) => {
-      c.captureVideoToCanvas($video, $canvas)
-      const ctx = $canvas.getContext('2d')
-      if (!ctx) throw 'could not get ctx'
-      const imgData = ctx.getImageData(0, 0, $canvas.width, $canvas.height)
-      const buf = imgData.data.buffer
-      const arr = Array.from(new Uint8Array(buf))
-      if (imgData) {
-        const msg = { type, time, data: arr, width: $canvas.width, height: $canvas.height }
-        console.log("send background")
-        postMessageToBackground(msg)
       }
-      resolve({})
+    }
+
+    setTimeout(() => {
+      postMessageToBackground({ type: 'end' })
+      console.log('end')
+    }, 1000);
+  }, 2000);
+  const send = (type: Valueof<Pick<ToBackgroundFromContent, 'type'>>, data: number[]) => {
+    return new Promise((resolve) => {
+      const msg = { type, time, data, width: $canvas.width, height: $canvas.height }
+      console.log("send background")
+      postMessageToBackground(msg)
+      // c.captureVideoToCanvas($video, $canvas)
+      // const ctx = $canvas.getContext('2d')
+      // if (!ctx) throw 'could not get ctx'
+      // const imgData = ctx.getImageData(0, 0, $canvas.width, $canvas.height)
+      // const buf = imgData.data.buffer
+      // const arr = Array.from(new Uint8Array(buf))
+      // if (imgData) {
+      //   const msg = { type, time, data: arr, width: $canvas.width, height: $canvas.height }
+      //   console.log("send background")
+      //   postMessageToBackground(msg)
+      // }
+      // resolve({})
     })
   }
 
   chrome.runtime.onMessage.addListener<ToContentFromBackground>((msg, sender, sendResponse) => {
-    console.log('from background', msg)
+    // console.log('from background', msg)
     switch(msg.type) {
       case 'convertToGray':
+        console.log('binary come')
+
         convertToGray($canvas)(msg);
+        c.laplacianFilter($canvas)
+        // c.sharping($canvas)
         break
       case 'compareResult':
         break

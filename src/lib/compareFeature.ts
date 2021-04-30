@@ -25,20 +25,27 @@ const compare = (cv: OpenCV, callback: (msg: ToBackgroundFromWebWorkerEvent) => 
   const img2desc = new cv.Mat()
   detector.detectAndCompute(img2, new cv.Mat(), img2KP, img2desc)
 
-  const matches = new cv.DMatchVector()
-  bf.match(img1desc, img2desc, matches)
+  const matches = new cv.DMatchVectorVector()
+  bf.knnMatch(img1desc, img2desc, matches, 2)
   const matchLength = matches.size()
-  let dist = 0
-  console.log(matches.get(0))
-  for (let i = 0; i < (10 > matchLength ? matchLength : 10); i++) {
-    console.log(matches.get(i))
-  }
-  for (let i = 0; i < matchLength; i++) {
-    dist += matches.get(i).distance
-  }
-  console.log('dist', dist, 'len', matchLength, 'result', dist / matchLength)
 
-  // callback({ type: 'compare', result: dist / matchLength });
+  // for (let i = 0; i < (10 > matchLength ? matchLength : 10); i++) {
+  //   console.log(matches.get(i))
+  // }
+  let len = 0
+  for (let i = 0; i < matchLength; i++) {
+    const match = matches.get(i)
+    const md = match.get(0)
+    const nd = match.get(1)
+    if (md.distance < 0.5 * nd.distance) {
+      len++
+    }
+  }
+  // const result = new cv.Mat()
+  // cv.drawMatchesKnn(img1, img1KP, img2, img2KP, good, result)
+
+  // callback({ type: 'convertToGray', data: Array.from(result.data), width, height, time: 0 })
+  callback({ type: 'compareFeature', time: msg.img1.time, result: len });
   console.log('postMessage')
   img1Raw.delete()
   img1.delete()
