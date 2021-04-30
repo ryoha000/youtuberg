@@ -1,3 +1,4 @@
+import { convolve3x3 } from "./convolve";
 import { BinaryImage } from "./typing/image";
 
 export const binaryNoiseFilter = (binaryImage: BinaryImage, radius = 3, threshold = 0.1) => {
@@ -14,6 +15,34 @@ export const binaryNoiseFilter = (binaryImage: BinaryImage, radius = 3, threshol
     }
   }
   return result
+}
+
+const sharping = ($canvas: HTMLCanvasElement) => {
+  const ctx = $canvas.getContext('2d')
+  if (!ctx) throw 'failed get 2d context'
+  const width = $canvas.width
+  const height = $canvas.height
+  const imageData = ctx.getImageData(0, 0, width, height)
+  const result = new ImageData(width, height)
+  const kernel = [
+    0, -1, 0,
+    -1, 5, -1,
+    0, -1, 0
+  ].map(v => v * 10)
+  for (let i = 0; i < height; i++) {
+    for (let j = 0; j < width; j++) {
+      result.data[(i * width + j) * 4 + 0] = convolve3x3(imageData.data, kernel, i, width, height, j, 0)
+      result.data[(i * width + j) * 4 + 1] = convolve3x3(imageData.data, kernel, i, width, height, j, 1)
+      result.data[(i * width + j) * 4 + 2] = convolve3x3(imageData.data, kernel, i, width, height, j, 2)
+      result.data[(i * width + j) * 4 + 3] = imageData.data[(i * width + j) * 4 + 3]
+    }
+  }
+  ctx.putImageData(result, 0, 0)
+  const data = []
+  for (let i = 0; i < result.data.length; i++) {
+    data.push(result.data[i])
+  }
+  return data
 }
 
 /**
