@@ -38,7 +38,7 @@ export const binaryGroupedSizeFilter = (labels: number[], areas: number[], sizes
   return result
 }
 
-const sharping = ($canvas: HTMLCanvasElement) => {
+export const sharping = ($canvas: HTMLCanvasElement) => {
   const ctx = $canvas.getContext('2d')
   if (!ctx) throw 'failed get 2d context'
   const width = $canvas.width

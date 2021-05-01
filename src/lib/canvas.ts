@@ -17,9 +17,6 @@ export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanv
   const ctx = $canvas.getContext('2d')!
   ctx.clearRect(0, 0, $canvas.width, $canvas.height);
   ctx.drawImage($video, 0, 0, $canvas.width, $canvas.height)
-  // ctx.drawImage($video, $canvas.width * ratio, $canvas.height * cutTop, $canvas.width * (1 - ratio * 2), $canvas.height * (1 - cutTop), $canvas.width * ratio, $canvas.height * cutTop, $canvas.width * (1 - ratio * 2), $canvas.height * (1 - cutTop))
-  const imgData = ctx.getImageData(0, 0, $canvas.width, $canvas.height)
-  ctx.putImageData(imgData, 0, 0)
   return Array.from(ctx.getImageData(0, 0, $canvas.width, $canvas.height).data)
 }
 

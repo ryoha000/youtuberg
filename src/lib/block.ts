@@ -45,45 +45,55 @@ export const getScoresBinary = (data: boolean[], width: number, height: number, 
   return result
 }
 
-const getLongestLabelId = (contrours: number[], cols: number, direction: 'rows' | 'cols' = 'cols') => {
+export const getLongestLabelIds = (labels: number[], cols: number, direction: 'rows' | 'cols' = 'cols', threshold = 3) => {
   // top, bottomはただ最小、最大のindexをいれてるだけ
   const datas: { left: number, right: number, top: number, bottom: number }[] = []
-  for (let i = 0; i < contrours.length; i++) {
-    if (contrours[i] === 0) continue
-    if (!datas[contrours[i]]) {
-      datas[contrours[i]] = { left: i % cols, right: i % cols, top: i, bottom: i }
+  for (let i = 0; i < labels.length; i++) {
+    if (labels[i] === 0) continue
+    if (!datas[labels[i]]) {
+      datas[labels[i]] = { left: i % cols, right: i % cols, top: i, bottom: i }
       continue
     }
-    if (datas[contrours[i]].left > i % cols) datas[contrours[i]].left = i % cols
-    if (datas[contrours[i]].right < i % cols) datas[contrours[i]].right = i % cols
-    if (datas[contrours[i]].top > i) datas[contrours[i]].top = i
-    if (datas[contrours[i]].bottom < i) datas[contrours[i]].bottom = i
+    if (datas[labels[i]].left > i % cols) datas[labels[i]].left = i % cols
+    if (datas[labels[i]].right < i % cols) datas[labels[i]].right = i % cols
+    if (datas[labels[i]].top > i) datas[labels[i]].top = i
+    if (datas[labels[i]].bottom < i) datas[labels[i]].bottom = i
   }
   if (datas.length === 0) {
     throw 'there no group'
   }
 
-  let longest = -1
-  let longestId = 0
+  let longest = threshold
+  let longestIds: number[] = []
   if (direction === 'cols') {
     for (let i = 0; i < datas.length; i++) {
-      const diff = datas[i].right - datas[i].left
+      if (!datas[i]) {
+        continue
+      }
+      const diff = datas[i].right - datas[i].left + 1
       if (longest < diff) {
         longest = diff
-        longestId = i
+        longestIds = [i]
+      } else if (longest === diff) {
+        longestIds.push(i)
       }
     }
   }
   if (direction === 'rows') {
     for (let i = 0; i < datas.length; i++) {
-      const diff = Math.floor((datas[i].bottom - datas[i].top) / cols)
+      if (!datas[i]) {
+        continue
+      }
+      const diff = Math.floor((datas[i].bottom - datas[i].top) / cols) + 1
       if (longest < diff) {
         longest = diff
-        longestId = i
+        longestIds = [i]
+      } else if (longest === diff) {
+        longestIds.push(i)
       }
     }
   }
-  return longestId
+  return longestIds
 }
 
 export const getMergedContrours = (labels: number[], contrours: number[], scores: number[], cols: number, threshold: number) => {

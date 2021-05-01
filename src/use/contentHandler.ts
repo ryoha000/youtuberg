@@ -1,6 +1,6 @@
 import { drawGroups } from "../lib/canvas";
 import { ConvertGray } from "../lib/typing/message";
-import { fillMissingBlock, getMergedContrours, getScoresBinary, getSide } from '../lib/block'
+import { fillMissingBlock, getLongestLabelIds, getMergedContrours, getScoresBinary, getSide } from '../lib/block'
 import { findControursFromBinary } from '../lib/contrours'
 import { binaryGroupedSizeFilter } from '../lib/filter'
 import { groupByScores } from '../lib/grouping'
@@ -13,7 +13,7 @@ export const convertToBinary = ($canvas: HTMLCanvasElement) => (msg: ConvertGray
   $canvas.height = height
 
   const ctx = $canvas.getContext("2d");
-  if (!ctx) return
+  if (!ctx) throw 'couldnt get 2d context'
   ctx.clearRect(0, 0, width, height);
   ctx.filter = 'contrast(100000000000000000000000000%) grayscale(1)'
 
@@ -35,13 +35,18 @@ export const convertToBinary = ($canvas: HTMLCanvasElement) => (msg: ConvertGray
   const rows = Math.ceil(height / side)
   const cols = Math.ceil(width / side)
   const scores = getScoresBinary(noiseFilteredBinary, width, height, rows, cols, side)
-  const groupedLabels = new Array(width * height)
-  groupByScores(scores, rows, cols, groupedLabels, contrours, side * side * 0.1)
-  getMergedContrours(groupedLabels, contrours, scores, cols, side * side * 0.05)
+  const groupedLabels: number[] = new Array(rows * cols)
+  groupByScores(scores, rows, cols, groupedLabels, contrours, side * side * 0.07)
+  getMergedContrours(groupedLabels, contrours, scores, cols, side * side * 0.02)
   fillMissingBlock(groupedLabels, rows, cols)
 
   // ブロックのビジュアライズ
+  // binaryToData(binary, outData)
   binaryToData(noiseFilteredBinary, outData)
   drawGroups(outData, groupedLabels, width, height, cols, side, [0])
   ctx.putImageData(out, 0, 0);
+
+  const ids = getLongestLabelIds(groupedLabels, cols)
+
+  return { label: groupedLabels, cols, side, longestIds: ids }
 }
