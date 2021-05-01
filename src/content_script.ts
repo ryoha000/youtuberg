@@ -1,10 +1,10 @@
-import * as c from './lib/canvas'
+import { captureVideoToCanvas, getVideoElement, setupCanvas } from './lib/canvas'
 import { ToBackgroundFromContent, ToContentFromBackground } from './lib/typing/message';
 import { convertToBinary } from './use/contentHandler';
 
 try {
-  const $video = c.getVideoElement()
-  const $canvas = c.setupCanvas()
+  const $video = getVideoElement()
+  const $canvas = setupCanvas()
   let time = 0
   const TIME_SECOND = 1
   setTimeout(async () => {
@@ -24,7 +24,7 @@ try {
         $video.addEventListener('seeked', resolve, { once: true })
       })
       try {
-        const data = c.captureVideoToCanvas($video, $canvas)
+        const data = captureVideoToCanvas($video, $canvas)
         send('convertToBinary', data)
         time += TIME_SECOND
         await sleep(2000)
@@ -50,8 +50,7 @@ try {
   chrome.runtime.onMessage.addListener<ToContentFromBackground>((msg, _, sendResponse) => {
     switch(msg.type) {
       case 'convertToBinary':
-        convertToBinary($canvas)(msg);
-        c.laplacianFilter($canvas)
+        convertToBinary($canvas)(msg)
         break
       case 'compareResult':
         break

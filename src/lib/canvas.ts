@@ -16,7 +16,8 @@ export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanv
   const cutTop = 0
   const ctx = $canvas.getContext('2d')!
   ctx.clearRect(0, 0, $canvas.width, $canvas.height);
-  ctx.drawImage($video, $canvas.width * ratio, $canvas.height * cutTop, $canvas.width * (1 - ratio * 2), $canvas.height * (1 - cutTop), $canvas.width * ratio, $canvas.height * cutTop, $canvas.width * (1 - ratio * 2), $canvas.height * (1 - cutTop))
+  ctx.drawImage($video, 0, 0, $canvas.width, $canvas.height)
+  // ctx.drawImage($video, $canvas.width * ratio, $canvas.height * cutTop, $canvas.width * (1 - ratio * 2), $canvas.height * (1 - cutTop), $canvas.width * ratio, $canvas.height * cutTop, $canvas.width * (1 - ratio * 2), $canvas.height * (1 - cutTop))
   const imgData = ctx.getImageData(0, 0, $canvas.width, $canvas.height)
   ctx.putImageData(imgData, 0, 0)
   return Array.from(ctx.getImageData(0, 0, $canvas.width, $canvas.height).data)
@@ -38,45 +39,7 @@ export const getBlobURL = ($canvas: HTMLCanvasElement) => {
   })
 }
 
-import { fillMissingBlock, getMergedContrours, getScoresBinary, getSide } from './block'
-import { findControursFromBinary } from './contrours'
-import { binaryGroupedSizeFilter } from './filter'
-import { groupByScores } from './grouping'
-import { binaryToData, dataToBinary } from './utils'
-export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
-  const ctx = $canvas.getContext('2d')
-  if (!ctx) throw 'failed get 2d context'
-  const imageData = ctx.getImageData(0, 0, $canvas.width, $canvas.height)
-  const out = ctx.createImageData(imageData.width, imageData.height);
-  const outData = out.data;
-
-  const binary = dataToBinary(imageData.data, imageData.width, imageData.height)
-
-  const labels: number[] = new Array(imageData.width * imageData.height)
-  const contrours: number[] = new Array(imageData.width * imageData.height)
-  const areas: number[] = []
-  const sizes: { rows: number, cols: number }[] = []
-  findControursFromBinary(binary, imageData.height, imageData.width, labels, contrours, areas, sizes)
-
-  const blockSide = imageData.width * 0.02
-  const noiseFilteredBinary = binaryGroupedSizeFilter(labels, areas, sizes, blockSide)
-
-  const side = getSide(imageData.width)
-  const rows = Math.ceil(imageData.height / side)
-  const cols = Math.ceil(imageData.width / side)
-  const scores = getScoresBinary(noiseFilteredBinary, imageData.width, imageData.height, rows, cols, side)
-  const groupedLabels = new Array(imageData.width * imageData.height)
-  groupByScores(scores, rows, cols, groupedLabels, contrours, side * side * 0.1)
-  getMergedContrours(groupedLabels, contrours, scores, cols, side * side * 0.05)
-  fillMissingBlock(groupedLabels, rows, cols)
-
-  // ブロックのビジュアライズ
-  binaryToData(noiseFilteredBinary, outData)
-  drawGroups(outData, groupedLabels, imageData.width, imageData.height, cols, side, [0])
-  ctx.putImageData(out, 0, 0);
-}
-
-const drawGroups = (data: Uint8ClampedArray, groupedLabels: number[], width: number, height: number, cols: number, side: number, ignoreGroupIds: number[]) => {
+export const drawGroups = (data: Uint8ClampedArray, groupedLabels: number[], width: number, height: number, cols: number, side: number, ignoreGroupIds: number[]) => {
   const groupIdColor: [number, number, number][] = []
   function getRandomInt(max: number) {
     return Math.floor(Math.random() * max);
