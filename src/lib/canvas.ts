@@ -38,7 +38,7 @@ export const getBlobURL = ($canvas: HTMLCanvasElement) => {
   })
 }
 
-import { fillMissingBlock, getMergedContrours, getScores, getScoresBinary, getSide } from './block'
+import { fillMissingBlock, getMergedContrours, getScoresBinary, getSide } from './block'
 import { findControursFromBinary } from './contrours'
 import { binaryGroupedSizeFilter } from './filter'
 import { groupByScores } from './grouping'
@@ -60,7 +60,6 @@ export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
 
   const blockSide = imageData.width * 0.02
   const noiseFilteredBinary = binaryGroupedSizeFilter(labels, areas, sizes, blockSide)
-  binaryToData(noiseFilteredBinary, outData)
 
   const side = getSide(imageData.width)
   const rows = Math.ceil(imageData.height / side)
@@ -72,12 +71,18 @@ export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
   fillMissingBlock(groupedLabels, rows, cols)
 
   // ブロックのビジュアライズ
+  binaryToData(noiseFilteredBinary, outData)
+  drawGroups(outData, groupedLabels, imageData.width, imageData.height, cols, side, [0])
+  ctx.putImageData(out, 0, 0);
+}
+
+const drawGroups = (data: Uint8ClampedArray, groupedLabels: number[], width: number, height: number, cols: number, side: number, ignoreGroupIds: number[]) => {
   const groupIdColor: [number, number, number][] = []
   function getRandomInt(max: number) {
     return Math.floor(Math.random() * max);
   }
   for (let i = 0; i < groupedLabels.length; i++) {
-    if (groupedLabels[i] === 0) continue
+    if (ignoreGroupIds.includes(groupedLabels[i])) continue
     if (!groupIdColor[groupedLabels[i]]) {
       const r = getRandomInt(255)
       const g = getRandomInt(255)
@@ -87,14 +92,13 @@ export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
     const [r, g, b] = groupIdColor[groupedLabels[i]]
     const row = Math.floor(i / cols)
     const col = i % cols
-    for (let k = row * side; k < Math.min((row + 1) * side, imageData.height); k++) {
-      for (let l = col * side; l < Math.min((col + 1) * side, imageData.width); l++) {
-        outData[(k * imageData.width + l) * 4 + 0] = r
-        outData[(k * imageData.width + l) * 4 + 1] = g
-        outData[(k * imageData.width + l) * 4 + 2] = b
-        outData[(k * imageData.width + l) * 4 + 3] = 255
+    for (let k = row * side; k < Math.min((row + 1) * side, height); k++) {
+      for (let l = col * side; l < Math.min((col + 1) * side, width); l++) {
+        data[(k * width + l) * 4 + 0] = r
+        data[(k * width + l) * 4 + 1] = g
+        data[(k * width + l) * 4 + 2] = b
+        data[(k * width + l) * 4 + 3] = 255
       }
     }
   }
-  ctx.putImageData(out, 0, 0);
 }
