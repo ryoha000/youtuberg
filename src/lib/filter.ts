@@ -17,6 +17,27 @@ export const binaryNoiseFilter = (binaryImage: BinaryImage, radius = 3, threshol
   return result
 }
 
+export const binaryGroupedSizeFilter = (labels: number[], areas: number[], sizes: { rows: number, cols: number }[], blockSide: number) => {
+  const result = []
+  for (let i = 0; i < labels.length; i++) {
+    // 文字より長いもの禁止
+    if (sizes[labels[i]].rows > blockSide || sizes[labels[i]].cols > blockSide) {
+      result.push(false)
+      continue
+    }
+
+    // 塗り面積が大きいのと極端に小さいノイズを無視
+    if (areas[labels[i]] > blockSide * blockSide * 0.5 || areas[labels[i]] < blockSide * blockSide * 0.01) {
+      result.push(false)
+      continue
+    } else {
+      result.push(true)
+      continue
+    }
+  }
+  return result
+}
+
 const sharping = ($canvas: HTMLCanvasElement) => {
   const ctx = $canvas.getContext('2d')
   if (!ctx) throw 'failed get 2d context'

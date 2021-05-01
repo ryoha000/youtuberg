@@ -6,13 +6,13 @@ try {
   const $video = c.getVideoElement()
   const $canvas = c.setupCanvas()
   let time = 0
-  // TODO: meteadataのloadとかでしっかりとる
-  const videoRect = $video.getClientRects()
-  $canvas.width = videoRect[0].width
-  $canvas.height = videoRect[0].height
   const TIME_SECOND = 1
-
   setTimeout(async () => {
+    // TODO: meteadataのloadとかでしっかりとる
+    const videoRect = $video.getClientRects()
+    $canvas.width = videoRect[0].width
+    $canvas.height = videoRect[0].height
+
     $video.pause()
     $video.currentTime = 0
     $canvas.getContext('2d')!.filter = 'contrast(100000000000000000000000000%) grayscale(1)'

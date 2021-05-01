@@ -27,6 +27,24 @@ export const getScores = (data: Uint8ClampedArray, width: number, height: number
   return result
 }
 
+export const getScoresBinary = (data: boolean[], width: number, height: number, rows: number, cols: number, side: number): number[] => {
+  const result = []
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      let score = 0
+      for (let k = row * side; k < Math.min((row + 1) * side, height); k++) {
+        for (let l = col * side; l < Math.min((col + 1) * side, width); l++) {
+          if (data[k * width + l]) {
+            score++
+          }
+        }
+      }
+      result.push(score)
+    }
+  }
+  return result
+}
+
 const getLongestLabelId = (contrours: number[], cols: number, direction: 'rows' | 'cols' = 'cols') => {
   // top, bottomはただ最小、最大のindexをいれてるだけ
   const datas: { left: number, right: number, top: number, bottom: number }[] = []

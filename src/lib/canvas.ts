@@ -12,7 +12,7 @@ export const setupCanvas = () => {
 }
 
 export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanvasElement) => {
-  const ratio = 0.1
+  const ratio = 0
   const cutTop = 0
   const ctx = $canvas.getContext('2d')!
   ctx.clearRect(0, 0, $canvas.width, $canvas.height);
@@ -38,9 +38,10 @@ export const getBlobURL = ($canvas: HTMLCanvasElement) => {
   })
 }
 
-import { fillMissingBlock, getMergedContrours, getScores, getSide } from './block'
-import { findContrours } from './contrours'
-import { findControursFromBinary } from './grouping'
+import { fillMissingBlock, getMergedContrours, getScores, getScoresBinary, getSide } from './block'
+import { findControursFromBinary } from './contrours'
+import { binaryGroupedSizeFilter } from './filter'
+import { groupByScores } from './grouping'
 import { binaryToData, dataToBinary } from './utils'
 export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
   const ctx = $canvas.getContext('2d')
@@ -51,92 +52,39 @@ export const laplacianFilter = ($canvas: HTMLCanvasElement) => {
 
   const binary = dataToBinary(imageData.data, imageData.width, imageData.height)
 
-  binaryToData(binary, outData)
-
-  const labels: number[] = new Array(imageData.height * imageData.width)
-  const contrours: number[] = new Array(imageData.height * imageData.width)
-  findControursFromBinary(binary, imageData.height, imageData.width, [], [], [])
-
-  // 各ラベルごとの面積
-  const mensekis: number[] = [0]
-  for (let i = 0; i < labels.length; i++) {
-    if (mensekis[labels[i]]) {
-      mensekis[labels[i]]++
-    } else {
-      mensekis[labels[i]] = 1
-    }
-  }
-  // 各ラベルの縦、横
-  const sizes: { left: number, right: number, top: number, bottom: number }[] = []
-  for (let i = 0; i < labels.length; i++) {
-    const col = i % imageData.width
-    const row = Math.floor(i / imageData.width)
-    const size = sizes[labels[i]]
-    if (size) {
-      if (size.left > col) size.left = col
-      if (size.right < col) size.right = col
-      if (size.top > row) size.top = row
-      if (size.bottom < row) size.bottom = row
-      sizes[labels[i]] = size
-    } else {
-      sizes[labels[i]] = { left: col, right: col, top: row, bottom: row }
-    }
-  }
+  const labels: number[] = new Array(imageData.width * imageData.height)
+  const contrours: number[] = new Array(imageData.width * imageData.height)
+  const areas: number[] = []
+  const sizes: { rows: number, cols: number }[] = []
+  findControursFromBinary(binary, imageData.height, imageData.width, labels, contrours, areas, sizes)
 
   const blockSide = imageData.width * 0.02
-  for (let i = 0; i < labels.length; i++) {
-    if (labels[i] === 0) continue
-    if (!sizes[labels[i]]) {
-      continue
-    }
-    if (sizes[labels[i]].right - sizes[labels[i]].left + 1 > blockSide || sizes[labels[i]].bottom - sizes[labels[i]].top + 1 > blockSide) {
-      outData[(i) * 4 + 0] = 0
-      outData[(i) * 4 + 1] = 0
-      outData[(i) * 4 + 2] = 0
-      outData[(i) * 4 + 3] = 255
-      continue
-    }
-
-    // 塗り面積が大きいと無視
-    if (mensekis[labels[i]] > blockSide * blockSide * 0.5 || mensekis[labels[i]] < blockSide * blockSide * 0.01) {
-      outData[(i) * 4 + 0] = 0
-      outData[(i) * 4 + 1] = 0
-      outData[(i) * 4 + 2] = 0
-      outData[(i) * 4 + 3] = 255
-      continue
-    } else {
-      outData[(i) * 4 + 0] = 255
-      outData[(i) * 4 + 1] = 255
-      outData[(i) * 4 + 2] = 255
-      outData[(i) * 4 + 3] = 255
-      continue
-    }
-  }
+  const noiseFilteredBinary = binaryGroupedSizeFilter(labels, areas, sizes, blockSide)
+  binaryToData(noiseFilteredBinary, outData)
 
   const side = getSide(imageData.width)
   const rows = Math.ceil(imageData.height / side)
   const cols = Math.ceil(imageData.width / side)
+  const scores = getScoresBinary(noiseFilteredBinary, imageData.width, imageData.height, rows, cols, side)
+  const groupedLabels = new Array(imageData.width * imageData.height)
+  groupByScores(scores, rows, cols, groupedLabels, contrours, side * side * 0.1)
+  getMergedContrours(groupedLabels, contrours, scores, cols, side * side * 0.05)
+  fillMissingBlock(groupedLabels, rows, cols)
 
-  const scores = getScores(outData, imageData.width, imageData.height, rows, cols, side)
-
-  findContrours(scores, rows, cols, labels, contrours, side * side * 0.1)
-  getMergedContrours(labels, contrours, scores, cols, side * side * 0.05)
-  fillMissingBlock(labels, rows, cols)
-
+  // ブロックのビジュアライズ
   const groupIdColor: [number, number, number][] = []
   function getRandomInt(max: number) {
     return Math.floor(Math.random() * max);
   }
-  for (let i = 0; i < labels.length; i++) {
-    if (labels[i] === 0) continue
-
-    if (!groupIdColor[labels[i]]) {
+  for (let i = 0; i < groupedLabels.length; i++) {
+    if (groupedLabels[i] === 0) continue
+    if (!groupIdColor[groupedLabels[i]]) {
       const r = getRandomInt(255)
       const g = getRandomInt(255)
       const b = getRandomInt(255)
-      groupIdColor[labels[i]] = [r, g, b]
+      groupIdColor[groupedLabels[i]] = [r, g, b]
     }
-    const [r, g, b] = groupIdColor[labels[i]]
+    const [r, g, b] = groupIdColor[groupedLabels[i]]
     const row = Math.floor(i / cols)
     const col = i % cols
     for (let k = row * side; k < Math.min((row + 1) * side, imageData.height); k++) {

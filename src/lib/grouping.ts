@@ -1,8 +1,5 @@
-export const findControursFromBinary = (scores: boolean[], rows: number, cols: number, labels: number[], contrours: number[], areas: number[]) => {
-  let groupId = 0
-  labels = new Array(rows * cols)
-  contrours = new Array(rows * cols)
-  areas = []
+export const groupByScores = (scores: number[], rows: number, cols: number, labels: number[], contrours: number[], minThreshold: number) => {
+  let groupId = 1
 
   // 周囲の有効なBlockのindexをとってくる関数
   const getAroundBlockIndexes = (index: number) => {
@@ -20,71 +17,50 @@ export const findControursFromBinary = (scores: boolean[], rows: number, cols: n
     return result
   }
 
-  const setControursFromLabels = () => {
-    for (let i = 0; i < labels.length; i++) {
-      contrours[i] = 0
-      if (labels[i] === 0) continue
-      const indexes = getAroundBlockIndexes(i)
-      if (indexes.length !== 4) {
-        contrours[i] = 1
-      }
-      let isEdge = false
-      for (let j = 0; j < indexes.length; j++) {
-        if (labels[indexes[j]] === 0) {
-          isEdge = true
-          break
-        }
-      }
-      if (isEdge) {
-        contrours[i] = 1
-      }
-    }
-  }
-
-  let maxCols = 0
-  let maxColsId = 0
   for (let i = 0; i < scores.length; i++) {
     // もう、このマスに関係するGroupが探索されてたらスキップ
-    if (labels[i] !== 0 && labels[i]) continue
-    const value = scores[i]
+    if (labels[i] === 0 || labels[i]) continue
+    labels[i] = 0
 
+    if (scores[i] < minThreshold) continue
+
+    // 閾値以上の時
     labels[i] = groupId
     let toCheckIndexes = getAroundBlockIndexes(i)
-
-    let area = 1
-    const col = i % cols
-    let minCol = col
-    let maxCol = col
 
     while (true) {
       if (toCheckIndexes.length === 0) break
       const newToCheckIndexes: number[] = []
       // 上下左右で閾値を超えているものがあるか探索
       for (let j = 0; j < toCheckIndexes.length; j++) {
-        if (labels[i] !== 0 && labels[toCheckIndexes[j]]) continue
+        if (labels[toCheckIndexes[j]] === 0 || labels[toCheckIndexes[j]]) continue
+        labels[toCheckIndexes[j]] = 0
 
-        if (scores[toCheckIndexes[j]] !== value) continue
+        if (scores[toCheckIndexes[j]] < minThreshold) continue
         labels[toCheckIndexes[j]] = groupId
-
-        const col = toCheckIndexes[j] / cols
-        if (maxCol < col) maxCol = col
-        if (minCol > col) minCol = col
-
         newToCheckIndexes.push(...getAroundBlockIndexes(toCheckIndexes[j]))
-        area++
       }
       toCheckIndexes = newToCheckIndexes
-    }
-    areas.push(area)
-    if (maxCols < maxCol - minCol + 1) {
-      maxCols = maxCol - minCol + 1
-      maxColsId = groupId
     }
     groupId += 1
   }
 
-  setControursFromLabels()
-
-  return maxColsId
+  for (let i = 0; i < labels.length; i++) {
+    contrours[i] = 0
+    if (labels[i] === 0) continue
+    const indexes = getAroundBlockIndexes(i)
+    if (indexes.length !== 4) {
+      contrours[i] = 1
+    }
+    let isEdge = false
+    for (let j = 0; j < indexes.length; j++) {
+      if (labels[indexes[j]] === 0) {
+        isEdge = true
+        break
+      }
+    }
+    if (isEdge) {
+      contrours[i] = 1
+    }
+  }
 }
-
