@@ -1,12 +1,12 @@
 import { drawGroups } from "../lib/canvas";
-import { ConvertGray } from "../lib/typing/message";
+import { convertBinary } from "../lib/typing/message";
 import { fillMissingBlock, getLongestLabelIds, getMergedContrours, getScoresBinary, getSide } from '../lib/block'
 import { findControursFromBinary } from '../lib/contrours'
 import { binaryGroupedSizeFilter } from '../lib/filter'
 import { groupByScores } from '../lib/grouping'
 import { binaryToData, dataToBinary } from '../lib/utils'
 
-export const convertToBinary = ($canvas: HTMLCanvasElement) => (msg: ConvertGray) => {
+export const convertToBinary = ($canvas: HTMLCanvasElement) => (msg: convertBinary) => {
   console.log('response img from background')
   const { data, width, height } = msg
   $canvas.width = width
@@ -41,9 +41,9 @@ export const convertToBinary = ($canvas: HTMLCanvasElement) => (msg: ConvertGray
   fillMissingBlock(groupedLabels, rows, cols)
 
   // ブロックのビジュアライズ
-  // binaryToData(binary, outData)
-  binaryToData(noiseFilteredBinary, outData)
-  drawGroups(outData, groupedLabels, width, height, cols, side, [0])
+  binaryToData(binary, outData)
+  // binaryToData(noiseFilteredBinary, outData)
+  // drawGroups(outData, groupedLabels, width, height, cols, side, [0])
   ctx.putImageData(out, 0, 0);
 
   const ids = getLongestLabelIds(groupedLabels, cols)

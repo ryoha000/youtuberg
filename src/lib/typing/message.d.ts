@@ -1,10 +1,10 @@
-export type ToWebWorkerFromBackground = ConvertGray | Compare
-export type ToBackgroundFromWebWorkerEvent = ConvertGray | Initialize | CompareResultHist | CompareResultPixel | CompareResultFeature
+export type ToWebWorkerFromBackground = convertBinary | Compare
+export type ToBackgroundFromWebWorkerEvent = convertBinary | Initialize | CompareResultHist | CompareResultPixel | CompareResultFeature
 
-export type ToContentFromBackground = ConvertGray | CompareResult
-export type ToBackgroundFromContent = ConvertGray | Enque | End
+export type ToContentFromBackground = convertBinary | CompareResult
+export type ToBackgroundFromContent = convertBinary | Enque | End
 
-export type ConvertGray = { type: 'convertToBinary' } & ImageInfo
+export type convertBinary = { type: 'convertToBinary' } & ImageInfo
 export type Enque = { type: 'enque' } & ImageInfo
 export type Initialize = { type: 'initialize' }
 export type Compare = { type: 'compare', img1: ImageInfo, img2: ImageInfo }
