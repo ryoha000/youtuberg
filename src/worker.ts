@@ -1,12 +1,12 @@
 importScripts('wasm-util.js', 'module.js', 'build/cv-wasm.js');
-import { ConvertGray, ToBackgroundFromWebWorkerEvent, ToWebWorkerFromBackground } from "./lib/typing/message";
+import { convertBinary, ToBackgroundFromWebWorkerEvent, ToWebWorkerFromBackground } from "./lib/typing/message";
 import { OpenCV } from "./@types/opencv";
 import compareF from './lib/compareFeature'
 import compareP from './lib/comparePixel'
 import compareH from './lib/compareHist'
 declare var cv: OpenCV
 
-const convertToBinary = (msg: ConvertGray) => {
+const convertToBinary = (msg: convertBinary) => {
   const start = performance.now()
 
   const { data, width, height, time } = msg

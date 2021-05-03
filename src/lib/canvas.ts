@@ -7,6 +7,7 @@ export const setupCanvas = () => {
   right: 0;
   background: black;
   object-fit: contain;
+  z-index: 11;
   `
   return $canvas
 }
@@ -18,14 +19,6 @@ export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanv
   ctx.clearRect(0, 0, $canvas.width, $canvas.height);
   ctx.drawImage($video, 0, 0, $canvas.width, $canvas.height)
   return Array.from(ctx.getImageData(0, 0, $canvas.width, $canvas.height).data)
-}
-
-export const getVideoElement = () => {
-  const $videos = document.getElementsByTagName('video')
-  if ($videos.length === 0) {
-    throw 'video element not found'
-  }
-  return $videos[0]
 }
 
 export const getBlobURL = ($canvas: HTMLCanvasElement) => {
