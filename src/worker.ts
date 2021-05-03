@@ -33,20 +33,20 @@ const convertToBinary = (msg: convertBinary) => {
 }
 
 addEventListener('message', (ev: MessageEvent<ToWebWorkerFromBackground>) => {
-  const meta = ev.data;
+  const msg = ev.data;
   console.log('from background')
-  switch (meta.type) {
+  switch (msg.type) {
     case 'convertToBinary':
-      convertToBinary(meta)
+      convertToBinary(msg)
       break
     case 'compare':
-      // compareH(cv, postMessageToBackground, meta)
-      // compareF(cv, postMessageToBackground, meta)
-      // compareP(cv, postMessageToBackground, meta)
-      // compareHist(cv, postMessageToBackground, meta)
+      // compareH(cv, postMessageToBackground, msg)
+      // compareF(cv, postMessageToBackground, msg)
+      // compareP(cv, postMessageToBackground, msg)
+      // compareHist(cv, postMessageToBackground, msg)
       break
     default:
-      const _exhaustiveCheck: never = meta;
+      const _exhaustiveCheck: never = msg;
   }
 });
 
