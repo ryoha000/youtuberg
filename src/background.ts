@@ -66,11 +66,9 @@ chrome.runtime.onMessage.addListener<ToBackgroundFromContent>((msg, sender, send
       break
     case 'end':
       console.warn('end')
-      setTimeout(() => {
-        console.log(JSON.stringify(resHist))
-        console.log(JSON.stringify(resPixel))
-        console.log(JSON.stringify(resFeature))
-      }, 10000);
+      for (let i = 0; i < workers.length; i++) {
+        postMessageToWebWorkers({ type: 'end' }, i)
+      }
       break
     default:
       const _exhaustiveCheck: never = msg;

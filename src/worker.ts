@@ -48,6 +48,9 @@ addEventListener('message', (ev: MessageEvent<ToWebWorkerFromBackground>) => {
       break
     case 'compare':
       break
+    case 'end':
+      labels.splice(0, 2)
+      break
     default:
       const _exhaustiveCheck: never = msg;
   }

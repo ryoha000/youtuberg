@@ -1,4 +1,4 @@
-export type ToWebWorkerFromBackground = convertBinary | Compare
+export type ToWebWorkerFromBackground = convertBinary | Compare | End
 export type ToBackgroundFromWebWorkerEvent = convertBinary | Initialize | CompareResultHist | CompareResultPixel | CompareResultFeature
 
 export type ToContentFromBackground = convertBinary | CompareResult | CompareResultPixel

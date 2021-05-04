@@ -86,8 +86,8 @@ const boot = async () => {
     sendResponse()
     return true
   })
-  const postMessageToBackground = (msg: ToBackgroundFromContent) => chrome.runtime.sendMessage(msg, () => {})
 }
+const postMessageToBackground = (msg: ToBackgroundFromContent) => chrome.runtime.sendMessage(msg, () => {})
 
 try {
   nowhref = location.href
@@ -99,6 +99,7 @@ try {
 setInterval(() => {
   if (nowhref !== location.href) {
     nowhref = location.href
+    postMessageToBackground({ type: 'end' })
     try {
       if (isInitialised) {
         resizeObserver.disconnect()
