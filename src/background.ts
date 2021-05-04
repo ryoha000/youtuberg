@@ -1,7 +1,7 @@
 import { CompareResultFeature, CompareResultHist, CompareResultPixel, Enque, ToBackgroundFromContent, ToBackgroundFromWebWorkerEvent, ToContentFromBackground, ToWebWorkerFromBackground } from "./lib/typing/message";
 
 const workers: Worker[] = []
-const WORKER_COUNT = 10
+const WORKER_COUNT = Math.max(navigator.hardwareConcurrency - 1, 1)
 for (let i = 0; i < WORKER_COUNT; i++) {
   const worker =  new Worker(chrome.runtime.getURL('worker.js'))
   worker.addEventListener('message', (ev: MessageEvent<ToBackgroundFromWebWorkerEvent>) => {
