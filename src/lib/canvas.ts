@@ -15,11 +15,15 @@ export const setupCanvas = (width: number, height: number) => {
   return $canvas
 }
 
-export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanvasElement, width: number, height: number) => {
+export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanvasElement, arr: number[], width: number, height: number) => {
   const ctx = $canvas.getContext('2d')!
   ctx.clearRect(0, 0, width, height);
   ctx.drawImage($video, 0, 0, width, height)
-  return Array.from(ctx.getImageData(0, 0, width, height).data)
+  const img = ctx.getImageData(0, 0, width, height)
+  for (let i = 0; i < img.data.length; i++) {
+    arr[i] = img.data[i]
+  }
+  return
 }
 
 export const getBlobURL = ($canvas: HTMLCanvasElement) => {

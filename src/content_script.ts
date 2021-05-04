@@ -13,6 +13,10 @@ let nowhref = ''
 let $canvas: HTMLCanvasElement
 let player: YT.Player
 const diffs: { time: number, diff: number }[] = []
+const sendToBackgroundData: number[] = []
+for (let i = 0; i < PLAYER_HEIGHT * PLAYER_WIDTH; i++) {
+  sendToBackgroundData.push(0)
+}
 
 const boot = async () => {
   if (!isInitialised) {
@@ -48,9 +52,9 @@ const boot = async () => {
         $video.addEventListener('seeked', resolve, { once: true })
       })
       try {
-        const data = captureVideoToCanvas($video, $canvas, PLAYER_WIDTH, PLAYER_HEIGHT)
+        captureVideoToCanvas($video, $canvas, sendToBackgroundData, PLAYER_WIDTH, PLAYER_HEIGHT)
         // const data = sharping($canvas)
-        send('convertToBinary', data)
+        send('convertToBinary', sendToBackgroundData)
         time += TIME_SECOND
         $video.currentTime += TIME_SECOND
         await seekPromise
