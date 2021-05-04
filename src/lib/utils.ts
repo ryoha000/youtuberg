@@ -18,7 +18,7 @@ export const uniqObjectArray = <T, U extends keyof T>(array: T[], ...args: U[]) 
   })
 }
 
-export const dataToBinary = (data: Uint8ClampedArray | number[], width: number, height: number) => {
+export const dataToBinary = (data: Uint8ClampedArray | Uint8Array | number[], width: number, height: number) => {
   const binary = []
   for (let i = 0; i < height; i++) {
     for (let j = 0; j < width; j++) {

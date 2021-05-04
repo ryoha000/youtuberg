@@ -1,7 +1,7 @@
 export type ToWebWorkerFromBackground = convertBinary | Compare
 export type ToBackgroundFromWebWorkerEvent = convertBinary | Initialize | CompareResultHist | CompareResultPixel | CompareResultFeature
 
-export type ToContentFromBackground = convertBinary | CompareResult
+export type ToContentFromBackground = convertBinary | CompareResult | CompareResultPixel
 export type ToBackgroundFromContent = convertBinary | Enque | End
 
 export type convertBinary = { type: 'convertToBinary' } & ImageInfo
@@ -11,7 +11,7 @@ export type Compare = { type: 'compare', img1: ImageInfo, img2: ImageInfo }
 export type CompareResultHist = { type: 'compareHist', time: number, result: number }
 export type CompareResultPixel = { type: 'comparePixel', time: number, result: number }
 export type CompareResultFeature = { type: 'compareFeature', time: number, result: number }
-export type CompareResult = { type: 'compareResult' }
+export type CompareResult = { type: 'compareResult', time: number, result: number }
 export type End = { type: 'end' }
 export type OCR = { type: 'ocr', url: string }
 

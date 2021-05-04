@@ -7,24 +7,27 @@ import { convertToBinary } from './use/contentHandler';
 
 declare var scriptUrl: string
 
+let isInitialised = false
+let resizeObserver: ResizeObserver
+let nowhref = ''
+let $canvas: HTMLCanvasElement
 const PLAYER_ID = 'youtuberg-player'
 
 const boot = async () => {
-  eval(await fetch('https://www.youtube.com/player_api').then(v => v.text()))
-  eval(await fetch(scriptUrl).then(v => v.text()))
+  if (!isInitialised) {
+    eval(await fetch('https://www.youtube.com/player_api').then(v => v.text()))
+    eval(await fetch(scriptUrl).then(v => v.text()))
+    isInitialised = true
+  }
 
   const $video = getVideoElement(PLAYER_ID)
   const youtubergPlayer = await setupPlayer(PLAYER_ID, $video)
-  const resizeObserver = trackingOriginalVideo($video, PLAYER_ID)
-  const $canvas = setupCanvas()
+  resizeObserver = trackingOriginalVideo($video, PLAYER_ID)
+  $canvas = setupCanvas()
   let time = 0
-  const TIME_SECOND = 0.2
+  const TIME_SECOND = 0.5
 
-  const labels: number[][] = []
   const diffs: { time: number, diff: number }[] = []
-  let longests: number[] = []
-  let side = 0
-  let cols = 0
   setTimeout(async () => {
     // TODO: meteadataのloadとかでしっかりとる
     const videoRect = $video.getClientRects()
@@ -66,35 +69,16 @@ const boot = async () => {
       resolve({})
     })
   }
-  
+
   chrome.runtime.onMessage.addListener<ToContentFromBackground>((msg, _, sendResponse) => {
     switch(msg.type) {
       case 'convertToBinary':
-        const res = convertToBinary($canvas)(msg)
-        side = res.side
-        cols = res.cols
-        labels.push(res.label)
-        if (labels.length === 2) {
-          const d = compareGroup($canvas, labels[0], labels[1], cols, side)
-          diffs.push({ time: msg.time, diff: d.filter(v => v === 1).length })
-          labels.shift()
-        }
-
-        // longestの保存
-        if (res.label.length !== longests.length) {
-          longests = []
-          for (let i = 0; i < res.label.length; i++) {
-            longests.push(0)
-          }
-        }
-        for (let i = 0; i < res.label.length; i++) {
-          if (res.longestIds.includes(res.label[i])) {
-            longests[i]++
-          }
-        }
-
         break
       case 'compareResult':
+        break
+      case 'comparePixel':
+        console.log(msg)
+        diffs.push({ time: msg.time, diff: msg.result })
         break
       default:
         const _exhaustiveCheck: never = msg
@@ -106,7 +90,24 @@ const boot = async () => {
 }
 
 try {
+  nowhref = location.href
   boot()
 } catch (e) {
   console.warn(e)
 }
+
+setInterval(() => {
+  if (nowhref !== location.href) {
+    nowhref = location.href
+    try {
+      if (isInitialised) {
+        resizeObserver.disconnect()
+        document.getElementById(PLAYER_ID)?.remove()
+        $canvas.remove()
+      }
+      boot()
+    } catch (e) {
+      console.warn(e)
+    }
+  }
+}, 500)
