@@ -1,4 +1,4 @@
-export const setupCanvas = () => {
+export const setupCanvas = (width: number, height: number) => {
   const $canvas = document.createElement('canvas')
   document.body.appendChild($canvas)
   $canvas.style.cssText = `
@@ -8,17 +8,18 @@ export const setupCanvas = () => {
   background: black;
   object-fit: contain;
   z-index: 11;
+  display: none;
   `
+  $canvas.width = width
+  $canvas.height = height
   return $canvas
 }
 
-export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanvasElement) => {
-  const ratio = 0
-  const cutTop = 0
+export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanvasElement, width: number, height: number) => {
   const ctx = $canvas.getContext('2d')!
-  ctx.clearRect(0, 0, $canvas.width, $canvas.height);
-  ctx.drawImage($video, 0, 0, $canvas.width, $canvas.height)
-  return Array.from(ctx.getImageData(0, 0, $canvas.width, $canvas.height).data)
+  ctx.clearRect(0, 0, width, height);
+  ctx.drawImage($video, 0, 0, width, height)
+  return Array.from(ctx.getImageData(0, 0, width, height).data)
 }
 
 export const getBlobURL = ($canvas: HTMLCanvasElement) => {

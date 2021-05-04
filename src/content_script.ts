@@ -2,16 +2,17 @@ import { captureVideoToCanvas, setupCanvas } from './lib/canvas'
 import { compareGroup } from './lib/compareGroup';
 import { sharping } from './lib/filter';
 import { ToBackgroundFromContent, ToContentFromBackground } from './lib/typing/message';
-import { getVideoElement, setupPlayer, trackingOriginalVideo } from './lib/youtube';
+import { getPlayerVideoElement, getVideoElement, setupPlayer } from './lib/youtube';
+import { PLAYER_HEIGHT, PLAYER_ID, PLAYER_WIDTH } from './use/const';
 import { convertToBinary } from './use/contentHandler';
 
 declare var scriptUrl: string
 
 let isInitialised = false
-let resizeObserver: ResizeObserver
 let nowhref = ''
 let $canvas: HTMLCanvasElement
-const PLAYER_ID = 'youtuberg-player'
+let player: YT.Player
+const diffs: { time: number, diff: number }[] = []
 
 const boot = async () => {
   if (!isInitialised) {
@@ -20,48 +21,6 @@ const boot = async () => {
     isInitialised = true
   }
 
-  const $video = getVideoElement(PLAYER_ID)
-  const youtubergPlayer = await setupPlayer(PLAYER_ID, $video)
-  resizeObserver = trackingOriginalVideo($video, PLAYER_ID)
-  $canvas = setupCanvas()
-  let time = 0
-  const TIME_SECOND = 0.5
-
-  const diffs: { time: number, diff: number }[] = []
-  setTimeout(async () => {
-    // TODO: meteadataのloadとかでしっかりとる
-    const videoRect = $video.getClientRects()
-    $canvas.width = videoRect[0].width
-    $canvas.height = videoRect[0].height
-
-    $video.pause()
-    $video.currentTime = 0
-    $canvas.getContext('2d')!.filter = 'contrast(100000000000000000000000000%) grayscale(1)'
-
-    const sleep = (msec: number) => new Promise(resolve => setTimeout(resolve, msec))
-
-    const duration = $video.duration
-    for (let i = 0; i < duration / TIME_SECOND; i++) {
-      const seekPromise = new Promise(resolve => {
-        $video.addEventListener('seeked', resolve, { once: true })
-      })
-      try {
-        const data = captureVideoToCanvas($video, $canvas)
-        // const data = sharping($canvas)
-        send('convertToBinary', data)
-        time += TIME_SECOND
-        $video.currentTime += TIME_SECOND
-        await seekPromise
-      } catch {}
-    }
-
-    setTimeout(() => {
-      postMessageToBackground({ type: 'end' })
-      console.log('end')
-      console.log(JSON.stringify(diffs))
-    }, 1000);
-  }, 2000);
-  
   const send = (type: Valueof<Pick<ToBackgroundFromContent, 'type'>>, data: number[]) => {
     return new Promise((resolve) => {
       const msg = { type, time, data, width: $canvas.width, height: $canvas.height }
@@ -70,24 +29,58 @@ const boot = async () => {
     })
   }
 
-  chrome.runtime.onMessage.addListener<ToContentFromBackground>((msg, _, sendResponse) => {
-    switch(msg.type) {
-      case 'convertToBinary':
-        break
-      case 'compareResult':
-        break
-      case 'comparePixel':
-        console.log(msg)
-        diffs.push({ time: msg.time, diff: msg.result })
-        break
-      default:
-        const _exhaustiveCheck: never = msg
+  player = await setupPlayer(PLAYER_ID, PLAYER_WIDTH, PLAYER_HEIGHT)
+
+  player.playVideo()
+  const $video = getPlayerVideoElement(PLAYER_ID)
+  $canvas = setupCanvas(PLAYER_WIDTH, PLAYER_HEIGHT)
+  $canvas.getContext('2d')!.filter = 'contrast(100000000000000000000000000%) grayscale(1)'
+  let time = 0
+  const TIME_SECOND = 0.5
+
+  $video.addEventListener('loadedmetadata', async () => {
+    const duration = $video.duration
+    player.pauseVideo()
+    player.seekTo(0, false)
+    $canvas.getContext('2d')!.filter = 'contrast(100000000000000000000000000%) grayscale(1)'
+    for (let i = 0; i < duration / TIME_SECOND; i++) {
+      const seekPromise = new Promise(resolve => {
+        $video.addEventListener('seeked', resolve, { once: true })
+      })
+      try {
+        const data = captureVideoToCanvas($video, $canvas, PLAYER_WIDTH, PLAYER_HEIGHT)
+        // const data = sharping($canvas)
+        send('convertToBinary', data)
+        time += TIME_SECOND
+        $video.currentTime += TIME_SECOND
+        await seekPromise
+      } catch {}
     }
-    sendResponse()
-    return true
-  })
+    setTimeout(() => {
+      postMessageToBackground({ type: 'end' })
+      console.log('end')
+      console.log(JSON.stringify(diffs))
+    }, 1000);
+  }, { once: true })
 }
+
 const postMessageToBackground = (msg: ToBackgroundFromContent) => chrome.runtime.sendMessage(msg, () => {})
+
+chrome.runtime.onMessage.addListener<ToContentFromBackground>((msg, _, sendResponse) => {
+  switch(msg.type) {
+    case 'convertToBinary':
+      break
+    case 'compareResult':
+      break
+    case 'comparePixel':
+      diffs.push({ time: msg.time, diff: msg.result })
+      break
+    default:
+      const _exhaustiveCheck: never = msg
+  }
+  sendResponse()
+  return true
+})
 
 try {
   nowhref = location.href
@@ -101,11 +94,13 @@ setInterval(() => {
     nowhref = location.href
     postMessageToBackground({ type: 'end' })
     try {
-      if (isInitialised) {
-        resizeObserver.disconnect()
-        document.getElementById(PLAYER_ID)?.remove()
-        $canvas.remove()
-      }
+      try {
+        if (isInitialised) {
+          diffs.splice(0, diffs.length)
+          player.destroy()
+          $canvas.remove()
+        }
+      } catch {}
       boot()
     } catch (e) {
       console.warn(e)

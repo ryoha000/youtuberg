@@ -1,40 +1,32 @@
-export const setupPlayer = (PLAYER_ID: string, $video: HTMLVideoElement) => {
+export const setupPlayer = (playerId: string, width: number, height: number) => {
   return new Promise<YT.Player>(resolve => {
-    const rect = $video.getClientRects()[0]
     const div = document.createElement('div')
-    div.id = PLAYER_ID
-    div.style.cssText = `
-    position: absolute;
-    background: black;
-    object-fit: contain;
-    z-index: 10;
-    transform: translate(${rect.left}px, ${rect.top}px);
-    `
+    div.id = playerId
+    div.style.display = 'none'
     document.body.appendChild(div)
 
     const url = new URL(location.href)
     const id = url.searchParams.get('v')
     if (!id) throw 'there are no video'
     let youtubergPlayer: YT.Player
-    const setQualityAndResolve = () => {
-      const qualities = youtubergPlayer.getAvailableQualityLevels()
-      const priority: YT.SuggestedVideoQuality[] = ['highres', 'hd1080', 'hd720', 'large', 'medium', 'small', 'default']
-      for (const p of priority) {
-        if (qualities.includes(p)) {
-          youtubergPlayer.setPlaybackQuality(p)
-          break
-        }
-      }
-      resolve(youtubergPlayer)
-    }
-    youtubergPlayer = new YT.Player(PLAYER_ID, {
-      width: rect.width,
-      height: rect.height,
+    youtubergPlayer = new YT.Player(playerId, {
+      width: width,
+      height: height,
       videoId: id,
-      playerVars: { rel: 0 },
-      events: { onReady: setQualityAndResolve }
+      playerVars: { rel: 0, enablejsapi: 1 },
+      events: { onReady: () => resolve(youtubergPlayer) }
     })
   })
+}
+
+export const getPlayerVideoElement = (id: string) => {
+  const player = document.getElementById(id)
+  if (!player) throw 'there no iframe'
+  const playerDocument = (player as HTMLIFrameElement).contentDocument
+  if (!playerDocument) throw 'couldnt get contentDocument'
+  const $videos = playerDocument.body.getElementsByTagName('video')
+  if ($videos.length === 0) throw 'there are no video in iframe'
+  return $videos[0]
 }
 
 export const trackingOriginalVideo = ($video: HTMLVideoElement, playerId: string) => {

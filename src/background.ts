@@ -40,7 +40,6 @@ const resHist: CompareResultHist[] = []
 const resPixel: CompareResultPixel[] = []
 const resFeature: CompareResultFeature[] = []
 const postMessageToWebWorkers = (msg: ToWebWorkerFromBackground, index: number) => {
-  console.log(`to webworker: ${index}`)
   workers[index].postMessage(msg)
 }
 const postMessageToContent = (msg: ToContentFromBackground) => chrome.tabs.sendMessage(tabId, msg, () => {})
