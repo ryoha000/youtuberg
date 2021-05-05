@@ -21,8 +21,6 @@ const convertToBinary = (msg: convertBinary) => {
   const result = new cv.Mat()
   cv.cvtColor(binary, result, cv.COLOR_GRAY2RGBA, 0)
 
-  const resultData = Array.from(result.data)
-
   imgRaw.delete()
   gray.delete()
   binary.delete()
@@ -52,6 +50,7 @@ addEventListener('message', (ev: MessageEvent<ToWebWorkerFromBackground>) => {
         } else {
           const d = compareGroup(labels[0], labels[1])
           postMessageToBackground({ type: 'comparePixel', time: msg.time, result: d })
+          labels.splice(0, 2)
         }
       }
       break

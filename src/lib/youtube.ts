@@ -43,7 +43,7 @@ export const trackingOriginalVideo = ($video: HTMLVideoElement, playerId: string
   return resizeObserver
 }
 
-export const getVideoElement = (playerId: string) => {
+export const getVideoElement = () => {
   const $videos = document.getElementsByTagName('video')
   if ($videos.length === 0) {
     throw 'video element not found'

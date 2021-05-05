@@ -14,7 +14,12 @@ export const isChange = (diffs: { time: number, diff: number }[]) => {
   }
   for (let i = diffs.length - 1 - (MIN_INDEX_WINDOW * 2); i < diffs.length; i++) {
     if (i === diffs.length - 1 - MIN_INDEX_WINDOW) continue
-    if (diffs[i].diff > THRESHOLD) {
+    if (diffs[i].diff + THRESHOLD > diffs[diffs.length - 1 - MIN_INDEX_WINDOW].diff) {
+      if (i === diffs.length - 2 - MIN_INDEX_WINDOW && diffs.length >= MIN_INDEX_WINDOW * 2 && Math.abs(diffs[i].diff - diffs[diffs.length - 1 - MIN_INDEX_WINDOW].diff) < THRESHOLD) {
+        if (diffs[diffs.length - 2 - (MIN_INDEX_WINDOW * 2)].diff < THRESHOLD) {
+          continue
+        }
+      }
       return -1
     }
   }

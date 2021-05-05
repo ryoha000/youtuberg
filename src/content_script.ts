@@ -1,7 +1,7 @@
 import { captureVideoToCanvas, setupCanvas } from './lib/canvas'
 import { ToBackgroundFromContent, ToContentFromBackground } from './lib/typing/message';
 import { isChange } from './lib/vn';
-import { getPlayerVideoElement, setupPlayer } from './lib/youtube';
+import { getPlayerVideoElement, getVideoElement, setupPlayer } from './lib/youtube';
 import { PERCENTAGE_SEPARATION, PLAYER_HEIGHT, PLAYER_ID, PLAYER_WIDTH } from './use/const';
 
 declare var scriptUrl: string
@@ -9,6 +9,7 @@ declare var scriptUrl: string
 let isInitialised = false
 let nowhref = ''
 let $canvas: HTMLCanvasElement
+let $originalVideo: HTMLVideoElement
 let player: YT.Player
 const diffs: { time: number, diff: number }[] = []
 const changes: number[] = []
@@ -35,6 +36,7 @@ const boot = async () => {
   player = await setupPlayer(PLAYER_ID, PLAYER_WIDTH, PLAYER_HEIGHT)
 
   player.playVideo()
+  $originalVideo = getVideoElement()
   const $video = getPlayerVideoElement(PLAYER_ID)
   $canvas = setupCanvas(PLAYER_WIDTH, PLAYER_HEIGHT)
   $canvas.getContext('2d')!.filter = 'contrast(100000000000000000000000000%) grayscale(1)'
@@ -73,6 +75,7 @@ const boot = async () => {
     setTimeout(() => {
       postMessageToBackground({ type: 'end' })
       console.log('end')
+      console.log(JSON.stringify(diffs))
       for (const index of changes) {
         console.log(diffs[index])
       }
@@ -108,6 +111,19 @@ try {
 } catch (e) {
   console.warn(e)
 }
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const nowTime = $originalVideo.currentTime
+    for (const index of changes) {
+      if (diffs[index].time > nowTime) {
+        $originalVideo.currentTime = diffs[index].time - 0.25
+        console.log(`to ${diffs[index].time} from ${nowTime}`)
+        break
+      }
+    }
+  }
+})
 
 setInterval(() => {
   if (nowhref !== location.href) {
