@@ -36,23 +36,6 @@ export const dataToBinary = (data: Uint8ClampedArray | Uint8Array | number[], wi
   return binary
 }
 
-export const dataSetToBinary = (data: Uint8ClampedArray | Uint8Array | number[], binary: boolean[], width: number, height: number) => {
-  for (let i = 0; i < height; i++) {
-    for (let j = 0; j < width; j++) {
-      if (
-        data[(i * width + j) * 4 + 0] > 200 &&
-        data[(i * width + j) * 4 + 1] > 200 &&
-        data[(i * width + j) * 4 + 2] > 200
-      ) {
-        binary[i * width + j] = true
-      } else {
-        binary[i * width + j] = false
-      }
-    }
-  }
-  return binary
-}
-
 export const binaryToData = (binary: boolean[], data: Uint8ClampedArray) => {
   for (let i = 0; i < binary.length; i++) {
     if (binary[i]) {

@@ -48,7 +48,7 @@ export const findControursFromBinary = (
 
   for (let i = 0; i < src.length; i++) {
     // もう、このマスに関係するGroupが探索されてたらスキップ
-    if (labels[i] !== -1) continue
+    if (labels[i] === 0 || labels[i]) continue
 
     const value = src[i]
     labels[i] = groupId
@@ -66,7 +66,7 @@ export const findControursFromBinary = (
       const newToCheckIndexes: number[] = []
       // 上下左右で閾値を超えているものがあるか探索
       for (let j = 0; j < toCheckIndexes.length; j++) {
-        if (labels[toCheckIndexes[j]] !== -1) continue
+        if (labels[toCheckIndexes[j]] === 0 || labels[toCheckIndexes[j]]) continue
 
         if (src[toCheckIndexes[j]] !== value) continue
         labels[toCheckIndexes[j]] = groupId
