@@ -4,8 +4,10 @@ import { OpenCV } from "./@types/opencv";
 import { binaryGroupedSizeFilter } from "./lib/filter";
 import { fillMissingBlock, getMergedContrours, getScoresBinary, getSide } from "./lib/block";
 import { findControursFromBinary } from "./lib/contrours";
-import { dataToBinary } from "./lib/utils";
+import { dataSetToBinary } from "./lib/utils";
 import { groupByScores } from "./lib/grouping";
+import { PLAYER_HEIGHT, PLAYER_WIDTH } from "./use/const";
+import { getArrayFromPool, returnArrayToPool, setupArrayPool } from "./lib/pool";
 declare var cv: OpenCV
 
 const convertToBinary = (msg: convertBinary) => {
@@ -21,12 +23,9 @@ const convertToBinary = (msg: convertBinary) => {
   const result = new cv.Mat()
   cv.cvtColor(binary, result, cv.COLOR_GRAY2RGBA, 0)
 
-  const resultData = Array.from(result.data)
-
   imgRaw.delete()
   gray.delete()
   binary.delete()
-  // result.delete()
 
   return ({ time, mat: result, width: width, height: height })
 }
@@ -62,27 +61,36 @@ Module.onInit(() => {
 
 const postMessageToBackground = (msg: ToBackgroundFromWebWorkerEvent) => postMessage(msg)
 
-const getLabel = (data: number[] | Uint8Array, width: number, height: number) => {
-  const binary = dataToBinary(data, width, height)
+const widthXheightNumberPool = setupArrayPool(-1, PLAYER_WIDTH * PLAYER_HEIGHT, 16)
+const widthXheightBooleanPool = setupArrayPool(false, PLAYER_WIDTH * PLAYER_HEIGHT, 16)
 
-  const labels: number[] = new Array(width * height)
-  const contrours: number[] = new Array(width * height)
+const getLabel = (data: number[] | Uint8Array, width: number, height: number) => {
+  const binaryObj = getArrayFromPool(widthXheightBooleanPool)
+  dataSetToBinary(data, binaryObj.object, width, height)
+
+  const labelObj = getArrayFromPool(widthXheightNumberPool)
+  const controursObj = getArrayFromPool(widthXheightNumberPool)
   const areas: number[] = []
   const sizes: { rows: number, cols: number }[] = []
-  findControursFromBinary(binary, height, width, labels, contrours, areas, sizes)
+  findControursFromBinary(binaryObj.object, height, width, labelObj.object, controursObj.object, areas, sizes)
 
+  const noiseFilteredBinaryObj = getArrayFromPool(widthXheightBooleanPool)
   const blockSide = width * 0.02
-  const noiseFilteredBinary = binaryGroupedSizeFilter(labels, areas, sizes, blockSide)
+  binaryGroupedSizeFilter(labelObj.object, areas, sizes, noiseFilteredBinaryObj.object, blockSide)
 
   const side = getSide(width)
   const rows = Math.ceil(height / side)
   const cols = Math.ceil(width / side)
-  const scores = getScoresBinary(noiseFilteredBinary, width, height, rows, cols, side)
+  const scores = getScoresBinary(noiseFilteredBinaryObj.object, width, height, rows, cols, side)
   const groupedLabels: number[] = new Array(rows * cols)
-  groupByScores(scores, rows, cols, groupedLabels, contrours, side * side * 0.07)
-  getMergedContrours(groupedLabels, contrours, scores, cols, side * side * 0.02)
+  groupByScores(scores, rows, cols, groupedLabels, controursObj.object, side * side * 0.07)
+  getMergedContrours(groupedLabels, controursObj.object, scores, cols, side * side * 0.02)
   fillMissingBlock(groupedLabels, rows, cols)
 
+  returnArrayToPool(widthXheightBooleanPool, binaryObj)
+  returnArrayToPool(widthXheightBooleanPool, noiseFilteredBinaryObj)
+  returnArrayToPool(widthXheightNumberPool, labelObj)
+  returnArrayToPool(widthXheightNumberPool, controursObj)
   return groupedLabels
 }
 
