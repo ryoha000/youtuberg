@@ -1,5 +1,6 @@
 import { captureVideoToCanvas, setupCanvas } from './lib/canvas'
 import { ToBackgroundFromContent, ToContentFromBackground } from './lib/typing/message';
+import { isChange } from './lib/vn';
 import { getPlayerVideoElement, setupPlayer } from './lib/youtube';
 import { PERCENTAGE_SEPARATION, PLAYER_HEIGHT, PLAYER_ID, PLAYER_WIDTH } from './use/const';
 
@@ -10,6 +11,7 @@ let nowhref = ''
 let $canvas: HTMLCanvasElement
 let player: YT.Player
 const diffs: { time: number, diff: number }[] = []
+const changes: number[] = []
 const sendToBackgroundData: number[] = []
 for (let i = 0; i < PLAYER_HEIGHT * PLAYER_WIDTH; i++) {
   sendToBackgroundData.push(0)
@@ -71,7 +73,9 @@ const boot = async () => {
     setTimeout(() => {
       postMessageToBackground({ type: 'end' })
       console.log('end')
-      console.log(JSON.stringify(diffs))
+      for (const index of changes) {
+        console.log(diffs[index])
+      }
     }, 1000);
   }, { once: true })
 }
@@ -86,6 +90,10 @@ chrome.runtime.onMessage.addListener<ToContentFromBackground>((msg, _, sendRespo
       break
     case 'comparePixel':
       diffs.push({ time: msg.time, diff: msg.result })
+      const index = isChange(diffs)
+      if (index !== -1) {
+        changes.push(index)
+      }
       break
     default:
       const _exhaustiveCheck: never = msg

@@ -29,7 +29,9 @@ export const convertToBinary = ($canvas: HTMLCanvasElement) => (msg: convertBina
   findControursFromBinary(binary, height, width, labels, contrours, areas, sizes)
 
   const blockSide = width * 0.02
-  const noiseFilteredBinary = binaryGroupedSizeFilter(labels, areas, sizes, blockSide)
+
+  const noiseFilteredBinary: boolean[] = new Array(width * height)
+  binaryGroupedSizeFilter(labels, areas, sizes, noiseFilteredBinary, blockSide)
 
   const side = getSide(width)
   const rows = Math.ceil(height / side)
