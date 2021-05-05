@@ -35,14 +35,23 @@ addEventListener('message', (ev: MessageEvent<ToWebWorkerFromBackground>) => {
   const msg = ev.data;
   switch (msg.type) {
     case 'convertToBinary':
-      const data = convertToBinary(msg)
-      const label = getLabel(data.mat.data, data.width, data.height)
-      data.mat.delete()
-      labels.push(label)
+      try {
+        const data = convertToBinary(msg)
+        const label = getLabel(data.mat.data, data.width, data.height)
+        data.mat.delete()
+        labels.push(label)
+      } catch (e) {
+        labels.push([])
+        console.error(e)
+      }
       if (labels.length === 2) {
-        const d = compareGroup(labels[0], labels[1])
-        postMessageToBackground({ type: 'comparePixel', time: msg.time, result: d })
-        labels.splice(0, 2)
+        if (labels[0].length !== labels[1].length) {
+          postMessageToBackground({ type: 'comparePixel', time: msg.time, result: 0 })
+          labels.splice(0, 2)
+        } else {
+          const d = compareGroup(labels[0], labels[1])
+          postMessageToBackground({ type: 'comparePixel', time: msg.time, result: d })
+        }
       }
       break
     case 'compare':
