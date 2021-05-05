@@ -1,10 +1,7 @@
 import { captureVideoToCanvas, setupCanvas } from './lib/canvas'
-import { compareGroup } from './lib/compareGroup';
-import { sharping } from './lib/filter';
 import { ToBackgroundFromContent, ToContentFromBackground } from './lib/typing/message';
-import { getPlayerVideoElement, getVideoElement, setupPlayer } from './lib/youtube';
-import { PLAYER_HEIGHT, PLAYER_ID, PLAYER_WIDTH } from './use/const';
-import { convertToBinary } from './use/contentHandler';
+import { getPlayerVideoElement, setupPlayer } from './lib/youtube';
+import { PERCENTAGE_SEPARATION, PLAYER_HEIGHT, PLAYER_ID, PLAYER_WIDTH } from './use/const';
 
 declare var scriptUrl: string
 
@@ -43,11 +40,17 @@ const boot = async () => {
   const TIME_SECOND = 0.5
 
   $video.addEventListener('loadedmetadata', async () => {
+    const start = performance.now()
     const duration = $video.duration
     player.pauseVideo()
     player.seekTo(0, false)
     $canvas.getContext('2d')!.filter = 'contrast(100000000000000000000000000%) grayscale(1)'
-    for (let i = 0; i < duration / TIME_SECOND; i++) {
+    const loopCount = duration / TIME_SECOND
+
+    const kugiri = Math.floor(loopCount / (100 / PERCENTAGE_SEPARATION))
+    let percentageKugiri = 1
+
+    for (let i = 0; i < loopCount; i++) {
       const seekPromise = new Promise(resolve => {
         $video.addEventListener('seeked', resolve, { once: true })
       })
@@ -59,6 +62,11 @@ const boot = async () => {
         $video.currentTime += TIME_SECOND
         await seekPromise
       } catch {}
+
+      if (percentageKugiri * kugiri < i) {
+        console.log(`finish ${percentageKugiri * PERCENTAGE_SEPARATION}%`, `${(performance.now() - start) / 1000}sec`)
+        percentageKugiri++
+      }
     }
     setTimeout(() => {
       postMessageToBackground({ type: 'end' })
