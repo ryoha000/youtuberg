@@ -3,13 +3,14 @@
   "version": "0.0.0",
   "description": "Intuitive operation of YouTube videos in visual novel format",
   "scripts": {
-    "dev": "esbuild src/content_script.ts src/background.ts src/worker.ts --bundle --outdir=public --watch --loader:.png=dataurl",
-    "build": "esbuild src/content_script.ts src/background.ts src/worker.ts --bundle --outdir=public --minify --loader:.png=dataurl",
+    "dev": "set PRODUCTION=0 && node build.js",
+    "build": "set PRODUCTION=1 && node build.js",
     "type-check": "tsc --noEmit"
   },
   "author": "ryoha",
   "license": "ISC",
   "dependencies": {
+    "@ryoha/youtuberg-wasm": "^0.1.2",
     "@types/youtube": "0.0.42",
     "esbuild": "^0.11.11"
   },
