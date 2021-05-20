@@ -2,4 +2,5 @@ node_modules/
 public/content_script.js
 public/worker.js
 public/background.js
+public/patch-worker.js
 public/*.wasm

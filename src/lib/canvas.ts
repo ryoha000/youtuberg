@@ -15,15 +15,14 @@ export const setupCanvas = (width: number, height: number) => {
   return $canvas
 }
 
-export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanvasElement, arr: number[], width: number, height: number) => {
+export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanvasElement, arr: Uint8Array, width: number, height: number) => {
   const ctx = $canvas.getContext('2d')!
   ctx.clearRect(0, 0, width, height);
   ctx.drawImage($video, 0, 0, width, height)
   const img = ctx.getImageData(0, 0, width, height)
-  for (let i = 0; i < img.data.length; i++) {
-    arr[i] = img.data[i]
+  for (let i = 0; i < img.data.length / 4; i++) {
+    arr[i] = img.data[i * 4]
   }
-  return
 }
 
 export const getBlobURL = ($canvas: HTMLCanvasElement) => {
@@ -34,7 +33,7 @@ export const getBlobURL = ($canvas: HTMLCanvasElement) => {
   })
 }
 
-export const drawGroups = (data: Uint8ClampedArray, groupedLabels: number[], width: number, height: number, cols: number, side: number, ignoreGroupIds: number[]) => {
+export const drawGroups = (data: Uint8ClampedArray, groupedLabels: number[] | Uint32Array, width: number, height: number, cols: number, side: number, ignoreGroupIds: number[]) => {
   const groupIdColor: [number, number, number][] = []
   function getRandomInt(max: number) {
     return Math.floor(Math.random() * max);

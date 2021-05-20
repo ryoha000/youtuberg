@@ -15,11 +15,10 @@ export const convertToBinary = ($canvas: HTMLCanvasElement) => (msg: convertBina
   const ctx = $canvas.getContext("2d");
   if (!ctx) throw 'couldnt get 2d context'
   ctx.clearRect(0, 0, width, height);
-  ctx.filter = 'contrast(100000000000000000000000000%) grayscale(1)'
+  ctx.filter = 'grayscale(1)'
 
   const out = ctx.createImageData(width, height);
-  const outData = out.data;
-
+  const outData = out.data
   const binary = dataToBinary(data, width, height)
 
   const labels: number[] = new Array(width * height)

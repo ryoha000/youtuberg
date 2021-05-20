@@ -15,5 +15,8 @@ export type CompareResult = { type: 'compareResult', time: number, result: numbe
 export type End = { type: 'end' }
 export type OCR = { type: 'ocr', url: string }
 
-export type ImageInfo = { time: number, width: number, height: number, data: number[] }
+export type ImageInfo = { time: number, width: number, height: number, cols: number, side: number, data: number[] }
 export type Block = { row: number, col: number, score: number }
+
+export type ToWebWorkerFromPage = Enque | End
+export type ToPageFromWebWorker = Initialize | CompareResult

@@ -2,7 +2,6 @@ export const setupPlayer = (playerId: string, width: number, height: number) => 
   return new Promise<YT.Player>(resolve => {
     const div = document.createElement('div')
     div.id = playerId
-    div.style.display = 'none'
     document.body.appendChild(div)
 
     const url = new URL(location.href)
@@ -27,6 +26,12 @@ export const getPlayerVideoElement = (id: string) => {
   const $videos = playerDocument.body.getElementsByTagName('video')
   if ($videos.length === 0) throw 'there are no video in iframe'
   return $videos[0]
+}
+
+export const hidePlayer = (id: string) => {
+  const player = document.getElementById(id)
+  if (!player) throw 'there no iframe'
+  player.style.display = 'none'
 }
 
 export const trackingOriginalVideo = ($video: HTMLVideoElement, playerId: string) => {
