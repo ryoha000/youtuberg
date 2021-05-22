@@ -2,7 +2,7 @@ import { captureVideoToCanvas, setupCanvas } from './lib/canvas'
 import { End, Enque } from './lib/typing/message';
 import { isChange } from './lib/vn';
 import useWorker from './use/worker'
-import { getPlayerVideoElement, getVideoElement, hidePlayer, setupPlayer } from './lib/youtube';
+import { getPlayerVideoElement, getVideoElement, hidePlayer, setupOverlayCanvas, setupPlayer } from './lib/youtube';
 import { PLAYER_HEIGHT, PLAYER_ID, PLAYER_WIDTH } from './use/const';
 import { State } from './lib/typing/state';
 
@@ -13,13 +13,26 @@ const state: State = {
   nowhref: '',
   time: 0,
   $canvas: null,
+  $overlayCanvas: null,
   $video: null, 
   $originalVideo: null,
   player: null,
   diffs: [],
   changes: [],
+  observer: null,
   enque: (_: Enque) => {},
   sendToAllWorker: (_: End) => {},
+}
+
+const reset = () => {
+  state.$canvas?.remove()
+  state.$overlayCanvas?.remove()
+  state.$video = null
+  state.$originalVideo = null
+  state.player?.destroy()
+  state.diffs.splice(0, state.diffs.length)
+  state.changes.splice(0, state.diffs.length)
+  state.observer?.disconnect()
 }
 
 const boot = async () => {
@@ -55,6 +68,11 @@ const boot = async () => {
 
     const rect = state.$video.getBoundingClientRect()
     state.$canvas = setupCanvas(rect.width, rect.height)
+    const oc = setupOverlayCanvas(state)
+    if (oc) {
+      state.$overlayCanvas = oc.$overlayCanvas
+      state.observer = oc.resizeObserver
+    }
     hidePlayer(PLAYER_ID)
     state.$canvas.getContext('2d')!.filter = 'grayscale(1)'
 
@@ -115,16 +133,8 @@ setInterval(() => {
     state.nowhref = location.href
     state.sendToAllWorker({ type: 'end' })
     try {
-      try {
-        if (state.isInitialised) {
-          state.diffs.splice(0, state.diffs.length)
-          state.player?.destroy()
-          state.$canvas?.remove()
-        }
-      } catch {}
+      reset()
       boot()
-    } catch (e) {
-      console.warn(e)
-    }
+    } catch (e) { console.warn(e) }
   }
 }, 500)

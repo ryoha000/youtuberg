@@ -1,3 +1,5 @@
+import { captureVideoToCanvas, setupCanvas } from "./canvas"
+
 export const setupPlayer = (playerId: string, width: number, height: number) => {
   return new Promise<YT.Player>(resolve => {
     const div = document.createElement('div')
@@ -34,18 +36,33 @@ export const hidePlayer = (id: string) => {
   player.style.display = 'none'
 }
 
-export const trackingOriginalVideo = ($video: HTMLVideoElement, playerId: string) => {
-  const player = document.getElementById(playerId)
-  if (!player) throw 'there no iframe'
-  player.addEventListener('click', (e) => e.stopPropagation())
+export const setupOverlayCanvas = (state: { $originalVideo: HTMLVideoElement | null }) => {
+  if (!state.$originalVideo) return
+  const rect = state.$originalVideo.getClientRects()
+  const $overlayCanvas = document.createElement('canvas')
+  $overlayCanvas.width = rect[0].width
+  $overlayCanvas.height = rect[0].height
+  const parent = document.getElementById('primary-inner')
+  console.log(parent)
+  if (parent) {
+    parent.appendChild($overlayCanvas)
+  }
+  $overlayCanvas.addEventListener('click', (e) => e.stopPropagation())
+  $overlayCanvas.style.display = 'block'
+  $overlayCanvas.style.position = 'absolute'
+  setTimeout(() => {
+    if (state.$originalVideo) {
+      captureVideoToCanvas(state.$originalVideo, $overlayCanvas, new Uint8Array(), rect[0].width, rect[0].height)
+    }
+  }, 2000);
   const resizeObserver = new ResizeObserver(entries => {
-    player.style.top = `${entries[0].contentRect.top}px`
-    player.style.left = `${entries[0].contentRect.left}px`
-    player.style.width = `${entries[0].contentRect.width}px`
-    player.style.height = `${entries[0].contentRect.height}px`
+    $overlayCanvas.style.top = `${rect[0].top + entries[0].contentRect.top}px`
+    $overlayCanvas.style.left = `${rect[0].left + entries[0].contentRect.left}px`
+    $overlayCanvas.width = entries[0].contentRect.width
+    $overlayCanvas.height = entries[0].contentRect.height
   })
-  resizeObserver.observe($video)
-  return resizeObserver
+  resizeObserver.observe(state.$originalVideo)
+  return { resizeObserver, $overlayCanvas }
 }
 
 export const getVideoElement = () => {
