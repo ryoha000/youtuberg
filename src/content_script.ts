@@ -1,9 +1,9 @@
 import { captureVideoToCanvas, setupCanvas } from './lib/canvas'
-import { Enque, ToBackgroundFromContent, ToContentFromBackground, ToWebWorkerFromPage } from './lib/typing/message';
+import { End, Enque } from './lib/typing/message';
 import { isChange } from './lib/vn';
 import useWorker from './use/worker'
 import { getPlayerVideoElement, getVideoElement, hidePlayer, setupPlayer } from './lib/youtube';
-import { PERCENTAGE_SEPARATION, PLAYER_HEIGHT, PLAYER_ID, PLAYER_WIDTH } from './use/const';
+import { PLAYER_HEIGHT, PLAYER_ID, PLAYER_WIDTH } from './use/const';
 
 declare var scriptUrl: string
 
@@ -20,7 +20,7 @@ for (let i = 0; i < PLAYER_HEIGHT * PLAYER_WIDTH; i++) {
 }
 
 let enque = (_: Enque) => {}
-let sendToAllWorker = (_: ToWebWorkerFromPage) => {}
+let sendToAllWorker = (_: End) => {}
 
 const boot = async () => {
   if (!isInitialised) {
@@ -29,20 +29,17 @@ const boot = async () => {
       new Promise<void>(async resolve => {
         eval(await fetch('https://www.youtube.com/player_api').then(v => v.text()))
         eval(await fetch(scriptUrl).then(v => v.text()))
-        console.log('end setup2')
         resolve()
       }),
       new Promise<void>(async resolve => {
         const { setupWorkers, enque: _enque, sendToAllWorker: _sendToAllWorker } = useWorker(diffs)
         await setupWorkers()
-        console.log('end setup1')
         enque = _enque
         sendToAllWorker = _sendToAllWorker
         resolve()
       })
     ]
     await Promise.all(promises)
-    console.log('end setup3')
     isInitialised = true
   }
 
@@ -52,52 +49,37 @@ const boot = async () => {
   $originalVideo = getVideoElement()
   const $video = getPlayerVideoElement(PLAYER_ID)
   let time = 0
-  const TIME_SECOND = 0.5
+  const PLAY_BACK_RATE = 3
 
   $video.addEventListener('loadedmetadata', async () => {
-    const start = performance.now()
-    const duration = $video.duration
-    player.pauseVideo()
-    player.seekTo(0, false)
+    $video.playbackRate = PLAY_BACK_RATE
+    player.seekTo(0, true)
 
     const rect = $video.getBoundingClientRect()
     $canvas = setupCanvas(rect.width, rect.height)
     hidePlayer(PLAYER_ID)
     $canvas.getContext('2d')!.filter = 'grayscale(1)'
 
-    const loopCount = duration / TIME_SECOND
-
-    const kugiri = Math.floor(loopCount / (100 / PERCENTAGE_SEPARATION))
-    let percentageKugiri = 1
-
     const side = Math.floor(rect.width / 50)
     const cols = Math.ceil(rect.width / side)
     const data = new Uint8Array(rect.width * rect.height)
 
-    for (let i = 0; i < loopCount; i++) {
-      const seekPromise = new Promise(resolve => {
-        $video.addEventListener('seeked', resolve, { once: true })
-      })
+    while (true) {
       try {
-        captureVideoToCanvas($video, $canvas, data, rect.width, rect.height)
+        player.pauseVideo()
 
-        const d = []
-        for (let a = 0; a < data.length; a++) {
-          d.push(data[a])
+        if (time > $video.currentTime) {
+          break
         }
+        time = $video.currentTime
+        captureVideoToCanvas($video, $canvas, data, rect.width, rect.height)
+        const d = Array.from(data)
         enque({ type: 'enque', data: d, width: rect.width, height: rect.height, cols, side, time })
-
-        time += TIME_SECOND
-        $video.currentTime += TIME_SECOND
-        await seekPromise
-        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        player.playVideo()
+        await new Promise(resolve => setTimeout(resolve, 1))
       } catch (e) {
         console.error(e)
-      }
-
-      if (percentageKugiri * kugiri < i) {
-        console.log(`finish ${percentageKugiri * PERCENTAGE_SEPARATION}%`, `${(performance.now() - start) / 1000}sec`)
-        percentageKugiri++
       }
     }
     setTimeout(() => {

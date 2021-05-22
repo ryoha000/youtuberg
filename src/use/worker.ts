@@ -1,9 +1,11 @@
-import { Enque, ToPageFromWebWorker, ToWebWorkerFromPage } from "../lib/typing/message";
+import { End, Enque, ToPageFromWebWorker, ToWebWorkerFromPage } from "../lib/typing/message";
 
 const useWorker = (diffs: { time: number, diff: number}[]) => {
-  const workers: Worker[] = []
+  const workers: { isWork: boolean, worker: Worker }[] = []
   const WORKER_COUNT = Math.max(navigator.hardwareConcurrency - 1, 1) * 2
   const isInitialised: boolean[] = (new Array(WORKER_COUNT)).fill(false)
+  let lastCuedIndex = -1
+  const que: Enque[] = []
 
   const setupWorkers = () => {
     return new Promise<void>((resolve, reject) => {
@@ -21,6 +23,10 @@ const useWorker = (diffs: { time: number, diff: number}[]) => {
           switch (data.type) {
             case 'compareResult':
               diffs.push({ time: data.time, diff: data.result })
+              workers[i].isWork = false
+              if (que.length > 0) {
+                sendCompare(que.shift()!)
+              }
               break
             case 'initialize':
               isInitialised[i] = true
@@ -34,35 +40,46 @@ const useWorker = (diffs: { time: number, diff: number}[]) => {
               break
           }
         });
-        workers.push(worker)
+        workers.push({ worker, isWork: false })
       }
     })
   }
 
-  let lastCuedIndex = -1
-
   const postMessageToWebWorkers = (msg: ToWebWorkerFromPage, index: number) => {
-    workers[index].postMessage(msg)
+    workers[index].worker.postMessage(msg)
+    workers[index].isWork = true
   }
 
-  const sendToAllWorker = (msg: ToWebWorkerFromPage) => {
+  const sendToAllWorker = (msg: End) => {
     for (let i = 0; i < WORKER_COUNT; i++) {
       postMessageToWebWorkers(msg, i)
     }
+    lastCuedIndex = -1
+  }
+
+  const enque = (msg: Enque) => {
+    if (que.length === 0) {
+      sendCompare(msg)
+    } else {
+      que.push(msg)
+    }
   }
   
-  const enque = (msg: Enque) => {
-    if (msg.time !== 0) {
+  const sendCompare = (msg: Enque) => {
+    const nextIndex = workers.findIndex(v => !v.isWork)
+    if (nextIndex === -1) {
+      return
+    }
+    if (lastCuedIndex !== -1) {
       postMessageToWebWorkers(msg, lastCuedIndex)
     }
-    const nextIndex = workers.length <= lastCuedIndex + 1 ? 0 : lastCuedIndex + 1
     lastCuedIndex = nextIndex
     postMessageToWebWorkers(msg, nextIndex)
   }
 
   const destroyWorkers = () => {
     for (let i = 0; i < WORKER_COUNT; i++) {
-      workers[i].terminate()
+      workers[i].worker.terminate()
     }
   }
   
