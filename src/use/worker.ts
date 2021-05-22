@@ -1,6 +1,7 @@
 import { End, Enque, ToPageFromWebWorker, ToWebWorkerFromPage } from "../lib/typing/message";
+import { State } from "../lib/typing/state";
 
-const useWorker = (diffs: { time: number, diff: number}[]) => {
+const useWorker = (state: State) => {
   const workers: { isWork: boolean, worker: Worker }[] = []
   const WORKER_COUNT = Math.max(navigator.hardwareConcurrency - 1, 1) * 2
   const isInitialised: boolean[] = (new Array(WORKER_COUNT)).fill(false)
@@ -22,7 +23,7 @@ const useWorker = (diffs: { time: number, diff: number}[]) => {
           const data = ev.data
           switch (data.type) {
             case 'compareResult':
-              diffs.push({ time: data.time, diff: data.result })
+              state.diffs.push({ time: data.time, diff: data.result })
               workers[i].isWork = false
               if (que.length > 0) {
                 sendCompare(que.shift()!)
@@ -42,6 +43,8 @@ const useWorker = (diffs: { time: number, diff: number}[]) => {
         });
         workers.push({ worker, isWork: false })
       }
+      state.enque = enque
+      state.sendToAllWorker = sendToAllWorker
     })
   }
 

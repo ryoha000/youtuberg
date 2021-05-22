@@ -4,26 +4,26 @@ import { isChange } from './lib/vn';
 import useWorker from './use/worker'
 import { getPlayerVideoElement, getVideoElement, hidePlayer, setupPlayer } from './lib/youtube';
 import { PLAYER_HEIGHT, PLAYER_ID, PLAYER_WIDTH } from './use/const';
+import { State } from './lib/typing/state';
 
 declare var scriptUrl: string
 
-let isInitialised = false
-let nowhref = ''
-let $canvas: HTMLCanvasElement
-let $originalVideo: HTMLVideoElement
-let player: YT.Player
-const diffs: { time: number, diff: number }[] = []
-const changes: number[] = []
-const sendToBackgroundData: number[] = []
-for (let i = 0; i < PLAYER_HEIGHT * PLAYER_WIDTH; i++) {
-  sendToBackgroundData.push(0)
+const state: State = {
+  isInitialised: false,
+  nowhref: '',
+  time: 0,
+  $canvas: null,
+  $video: null, 
+  $originalVideo: null,
+  player: null,
+  diffs: [],
+  changes: [],
+  enque: (_: Enque) => {},
+  sendToAllWorker: (_: End) => {},
 }
 
-let enque = (_: Enque) => {}
-let sendToAllWorker = (_: End) => {}
-
 const boot = async () => {
-  if (!isInitialised) {
+  if (!state.isInitialised) {
     console.log('set promises')
     const promises = [
       new Promise<void>(async resolve => {
@@ -32,33 +32,31 @@ const boot = async () => {
         resolve()
       }),
       new Promise<void>(async resolve => {
-        const { setupWorkers, enque: _enque, sendToAllWorker: _sendToAllWorker } = useWorker(diffs)
+        const { setupWorkers } = useWorker(state)
         await setupWorkers()
-        enque = _enque
-        sendToAllWorker = _sendToAllWorker
         resolve()
       })
     ]
     await Promise.all(promises)
-    isInitialised = true
+    state.isInitialised = true
   }
 
-  player = await setupPlayer(PLAYER_ID, PLAYER_WIDTH, PLAYER_HEIGHT)
+  state.player = await setupPlayer(PLAYER_ID, PLAYER_WIDTH, PLAYER_HEIGHT)
 
-  player.playVideo()
-  $originalVideo = getVideoElement()
-  const $video = getPlayerVideoElement(PLAYER_ID)
-  let time = 0
+  state.player.playVideo()
+  state.$originalVideo = getVideoElement()
+  state.$video = getPlayerVideoElement(PLAYER_ID)
   const PLAY_BACK_RATE = 3
 
-  $video.addEventListener('loadedmetadata', async () => {
-    $video.playbackRate = PLAY_BACK_RATE
-    player.seekTo(0, true)
+  state.$video.addEventListener('loadedmetadata', async () => {
+    if (!state.$video) return
+    state.$video.playbackRate = PLAY_BACK_RATE
+    state.player?.seekTo(0, true)
 
-    const rect = $video.getBoundingClientRect()
-    $canvas = setupCanvas(rect.width, rect.height)
+    const rect = state.$video.getBoundingClientRect()
+    state.$canvas = setupCanvas(rect.width, rect.height)
     hidePlayer(PLAYER_ID)
-    $canvas.getContext('2d')!.filter = 'grayscale(1)'
+    state.$canvas.getContext('2d')!.filter = 'grayscale(1)'
 
     const side = Math.floor(rect.width / 50)
     const cols = Math.ceil(rect.width / side)
@@ -66,35 +64,32 @@ const boot = async () => {
 
     while (true) {
       try {
-        player.pauseVideo()
+        state.player?.pauseVideo()
 
-        if (time > $video.currentTime) {
+        if (state.time > state.$video.currentTime) {
           break
         }
-        time = $video.currentTime
-        captureVideoToCanvas($video, $canvas, data, rect.width, rect.height)
+        state.time = state.$video.currentTime
+        captureVideoToCanvas(state.$video, state.$canvas, data, rect.width, rect.height)
         const d = Array.from(data)
-        enque({ type: 'enque', data: d, width: rect.width, height: rect.height, cols, side, time })
+        state.enque({ type: 'enque', data: d, width: rect.width, height: rect.height, cols, side, time: state.time })
         
-        player.playVideo()
+        state.player?.playVideo()
         await new Promise(resolve => setTimeout(resolve, 1))
-      } catch (e) {
-        console.error(e)
-      }
+      } catch (e) { console.error(e) }
     }
     setTimeout(() => {
-      sendToAllWorker({ type: 'end' })
-      console.log('end')
-      console.log(JSON.stringify(diffs))
-      for (const index of changes) {
-        console.log(diffs[index])
+      state.sendToAllWorker({ type: 'end' })
+      console.log(JSON.stringify(state.diffs))
+      for (const index of state.changes) {
+        console.log(state.diffs[index])
       }
     }, 1000);
   }, { once: true })
 }
 
 try {
-  nowhref = location.href
+  state.nowhref = location.href
   boot()
 } catch (e) {
   console.warn(e)
@@ -102,27 +97,29 @@ try {
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
-    const nowTime = $originalVideo.currentTime
-    for (const index of changes) {
-      if (diffs[index].time > nowTime) {
-        $originalVideo.currentTime = diffs[index].time - 0.25
-        console.log(`to ${diffs[index].time} from ${nowTime}`)
-        break
+    if (state.$originalVideo) {
+      const nowTime = state.$originalVideo.currentTime
+      for (const index of state.changes) {
+        if (state.diffs[index].time > nowTime) {
+          state.$originalVideo.currentTime = state.diffs[index].time - 0.25
+          console.log(`to ${state.diffs[index].time} from ${nowTime}`)
+          break
+        }
       }
     }
   }
 })
 
 setInterval(() => {
-  if (nowhref !== location.href) {
-    nowhref = location.href
-    sendToAllWorker({ type: 'end' })
+  if (state.nowhref !== location.href) {
+    state.nowhref = location.href
+    state.sendToAllWorker({ type: 'end' })
     try {
       try {
-        if (isInitialised) {
-          diffs.splice(0, diffs.length)
-          player.destroy()
-          $canvas.remove()
+        if (state.isInitialised) {
+          state.diffs.splice(0, state.diffs.length)
+          state.player?.destroy()
+          state.$canvas?.remove()
         }
       } catch {}
       boot()
