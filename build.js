@@ -28,7 +28,7 @@ let wasmPlugin = {
 
 const isProduction = !!Number(process.env.PRODUCTION)
 require('esbuild').build({
-  entryPoints: ['src/content_script.ts', 'src/patch-worker.js', 'src/worker.ts', 'src/background.ts'],
+  entryPoints: ['src/content_script.ts', 'src/patch-worker.js', 'src/worker.ts', 'src/background.ts', 'src/popup.ts'],
   bundle: true,
   outdir: 'public',
   loader: { '.png': 'dataurl' },

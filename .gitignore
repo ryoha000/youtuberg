@@ -3,4 +3,5 @@ public/content_script.js
 public/worker.js
 public/background.js
 public/patch-worker.js
+public/popup.js
 public/*.wasm
