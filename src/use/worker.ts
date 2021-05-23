@@ -1,7 +1,7 @@
-import { End, Enque, ToPageFromWebWorker, ToWebWorkerFromPage } from "../lib/typing/message";
+import { CompareResult, End, Enque, ToPageFromWebWorker, ToWebWorkerFromPage } from "../lib/typing/message";
 import { State } from "../lib/typing/state";
 
-const useWorker = (state: State) => {
+const useWorker = (state: State, compareCallBack: (msg: CompareResult) => void) => {
   const workers: { isWork: boolean, worker: Worker }[] = []
   const WORKER_COUNT = Math.max(navigator.hardwareConcurrency - 1, 1) * 2
   const isInitialised: boolean[] = (new Array(WORKER_COUNT)).fill(false)
@@ -23,7 +23,7 @@ const useWorker = (state: State) => {
           const data = ev.data
           switch (data.type) {
             case 'compareResult':
-              state.diffs.push({ time: data.time, diff: data.result })
+              compareCallBack(data)
               workers[i].isWork = false
               if (que.length > 0) {
                 sendCompare(que.shift()!)
@@ -44,7 +44,7 @@ const useWorker = (state: State) => {
         workers.push({ worker, isWork: false })
       }
       state.enque = enque
-      state.sendToAllWorker = sendToAllWorker
+      state.sendEndToAllWorker = sendEndToAllWorker
     })
   }
 
@@ -53,17 +53,24 @@ const useWorker = (state: State) => {
     workers[index].isWork = true
   }
 
-  const sendToAllWorker = (msg: End) => {
+  const sendEndToAllWorker = (msg: End) => {
     for (let i = 0; i < WORKER_COUNT; i++) {
       postMessageToWebWorkers(msg, i)
     }
     lastCuedIndex = -1
+    que.splice(0, que.length)
   }
 
+  let dCount = 0
   const enque = (msg: Enque) => {
+    if (dCount < 10) {
+      dCount++
+      console.log('enque', msg.time)
+    }
     if (que.length === 0) {
       sendCompare(msg)
     } else {
+      console.log('worker is busy')
       que.push(msg)
     }
   }
@@ -86,7 +93,7 @@ const useWorker = (state: State) => {
     }
   }
   
-  return { enque, sendToAllWorker, setupWorkers, destroyWorkers }
+  return { enque, sendEndToAllWorker, setupWorkers, destroyWorkers }
 }
 
 export default useWorker

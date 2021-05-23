@@ -10,8 +10,10 @@ export interface State {
   $originalVideo: HTMLVideoElement | null,
   player: YT.Player | null,
   diffs: { time: number, diff: number }[],
-  changes: number[],
+  vnDatas: VNData[],
   observer: ResizeObserver | null,
   enque: (_: Enque) => void,
-  sendToAllWorker: (_: End) => void,
+  sendEndToAllWorker: (_: End) => void,
 }
+
+export interface VNData { time: number, isSelifEnd: boolean }

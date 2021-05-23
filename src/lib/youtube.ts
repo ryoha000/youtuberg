@@ -1,4 +1,4 @@
-import { captureVideoToCanvas, setupCanvas } from "./canvas"
+import {  setFrameToArray, setupCanvas } from "./canvas"
 
 export const setupPlayer = (playerId: string, width: number, height: number) => {
   return new Promise<YT.Player>(resolve => {
@@ -33,31 +33,27 @@ export const getPlayerVideoElement = (id: string) => {
 export const hidePlayer = (id: string) => {
   const player = document.getElementById(id)
   if (!player) throw 'there no iframe'
-  player.style.display = 'none'
+  // player.style.display = 'none'
+  player.style.position = 'absolute'
+  player.style.top = '-200px'
 }
 
 export const setupOverlayCanvas = (state: { $originalVideo: HTMLVideoElement | null }) => {
   if (!state.$originalVideo) return
-  const rect = state.$originalVideo.getClientRects()
+  const rect = state.$originalVideo.getBoundingClientRect()
   const $overlayCanvas = document.createElement('canvas')
-  $overlayCanvas.width = rect[0].width
-  $overlayCanvas.height = rect[0].height
-  const parent = document.getElementById('primary-inner')
-  console.log(parent)
-  if (parent) {
-    parent.appendChild($overlayCanvas)
-  }
-  $overlayCanvas.addEventListener('click', (e) => e.stopPropagation())
-  $overlayCanvas.style.display = 'block'
+  $overlayCanvas.width = rect.width
+  $overlayCanvas.height = rect.height
+  $overlayCanvas.style.display = 'none'
   $overlayCanvas.style.position = 'absolute'
-  setTimeout(() => {
-    if (state.$originalVideo) {
-      captureVideoToCanvas(state.$originalVideo, $overlayCanvas, new Uint8Array(), rect[0].width, rect[0].height)
-    }
-  }, 2000);
+  const parent = document.getElementById('primary-inner')
+  parent?.appendChild($overlayCanvas)
+  $overlayCanvas.addEventListener('click', (e) => e.stopPropagation())
+
   const resizeObserver = new ResizeObserver(entries => {
-    $overlayCanvas.style.top = `${rect[0].top + entries[0].contentRect.top}px`
-    $overlayCanvas.style.left = `${rect[0].left + entries[0].contentRect.left}px`
+    const rect = state.$originalVideo!.getBoundingClientRect()
+    $overlayCanvas.style.top = `${rect.top + entries[0].contentRect.top}px`
+    $overlayCanvas.style.left = `${rect.left + entries[0].contentRect.left}px`
     $overlayCanvas.width = entries[0].contentRect.width
     $overlayCanvas.height = entries[0].contentRect.height
   })

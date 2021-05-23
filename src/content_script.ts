@@ -1,6 +1,6 @@
-import { captureVideoToCanvas, setupCanvas } from './lib/canvas'
-import { End, Enque } from './lib/typing/message';
-import { isChange } from './lib/vn';
+import {  setFrameToArray, setupCanvas } from './lib/canvas'
+import { CompareResult, End, Enque } from './lib/typing/message';
+import { isChange, setupControl, tempCheck } from './lib/vn';
 import useWorker from './use/worker'
 import { getPlayerVideoElement, getVideoElement, hidePlayer, setupOverlayCanvas, setupPlayer } from './lib/youtube';
 import { PLAYER_HEIGHT, PLAYER_ID, PLAYER_WIDTH } from './use/const';
@@ -18,10 +18,10 @@ const state: State = {
   $originalVideo: null,
   player: null,
   diffs: [],
-  changes: [],
+  vnDatas: [],
   observer: null,
   enque: (_: Enque) => {},
-  sendToAllWorker: (_: End) => {},
+  sendEndToAllWorker: (_: End) => {},
 }
 
 const reset = () => {
@@ -31,8 +31,23 @@ const reset = () => {
   state.$originalVideo = null
   state.player?.destroy()
   state.diffs.splice(0, state.diffs.length)
-  state.changes.splice(0, state.diffs.length)
+  state.vnDatas.splice(0, state.vnDatas.length)
   state.observer?.disconnect()
+  state.time = 0
+}
+
+let count = 0
+const compareCallBack = (msg: CompareResult) => {
+  state.diffs.push({ time: msg.time, diff: msg.result })
+  // const vnData = checkChangeThirdFromBack(state.diffs)
+  // if (vnData) {
+  //   state.vnDatas.push(vnData)
+  // }
+  count++
+  if (count > 10) {
+    state.vnDatas = tempCheck(state.diffs)
+    count = 0
+  }
 }
 
 const boot = async () => {
@@ -45,7 +60,7 @@ const boot = async () => {
         resolve()
       }),
       new Promise<void>(async resolve => {
-        const { setupWorkers } = useWorker(state)
+        const { setupWorkers } = useWorker(state, compareCallBack)
         await setupWorkers()
         resolve()
       })
@@ -74,11 +89,15 @@ const boot = async () => {
       state.observer = oc.resizeObserver
     }
     hidePlayer(PLAYER_ID)
-    state.$canvas.getContext('2d')!.filter = 'grayscale(1)'
+    state.player?.mute()
+    state.$canvas.getContext('2d')!.filter = 'grayscale(1) contrast(1000%)'
 
     const side = Math.floor(rect.width / 50)
     const cols = Math.ceil(rect.width / side)
-    const data = new Uint8Array(rect.width * rect.height)
+    const data = []
+    for (let _i = 0; _i < rect.width * rect.height; _i++) {
+      data.push(0)
+    }
 
     while (true) {
       try {
@@ -88,19 +107,18 @@ const boot = async () => {
           break
         }
         state.time = state.$video.currentTime
-        captureVideoToCanvas(state.$video, state.$canvas, data, rect.width, rect.height)
-        const d = Array.from(data)
-        state.enque({ type: 'enque', data: d, width: rect.width, height: rect.height, cols, side, time: state.time })
+        setFrameToArray(state.$video, state.$canvas, data, rect.width, rect.height)
+        state.enque({ type: 'enque', data, width: rect.width, height: rect.height, cols, side, time: state.time })
         
         state.player?.playVideo()
         await new Promise(resolve => setTimeout(resolve, 1))
       } catch (e) { console.error(e) }
     }
     setTimeout(() => {
-      state.sendToAllWorker({ type: 'end' })
+      state.sendEndToAllWorker({ type: 'end' })
       console.log(JSON.stringify(state.diffs))
-      for (const index of state.changes) {
-        console.log(state.diffs[index])
+      for (const vnData of state.vnDatas) {
+        console.log(vnData)
       }
     }, 1000);
   }, { once: true })
@@ -113,25 +131,26 @@ try {
   console.warn(e)
 }
 
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    if (state.$originalVideo) {
-      const nowTime = state.$originalVideo.currentTime
-      for (const index of state.changes) {
-        if (state.diffs[index].time > nowTime) {
-          state.$originalVideo.currentTime = state.diffs[index].time - 0.25
-          console.log(`to ${state.diffs[index].time} from ${nowTime}`)
-          break
-        }
-      }
-    }
-  }
-})
+setupControl(state)
+// window.addEventListener('keydown', (e) => {
+//   if (e.key === 'Enter') {
+//     if (state.$originalVideo) {
+//       const nowTime = state.$originalVideo.currentTime
+//       // for (const vnData of state.vnDatas) {
+//       //   if (state.diffs[index].time > nowTime) {
+//       //     state.$originalVideo.currentTime = state.diffs[index].time - 0.25
+//       //     console.log(`to ${state.diffs[index].time} from ${nowTime}`)
+//       //     break
+//       //   }
+//       // }
+//     }
+//   }
+// })
 
 setInterval(() => {
   if (state.nowhref !== location.href) {
     state.nowhref = location.href
-    state.sendToAllWorker({ type: 'end' })
+    state.sendEndToAllWorker({ type: 'end' })
     try {
       reset()
       boot()

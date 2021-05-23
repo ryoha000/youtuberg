@@ -15,7 +15,7 @@ export const setupCanvas = (width: number, height: number) => {
   return $canvas
 }
 
-export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanvasElement, arr: Uint8Array, width: number, height: number) => {
+export const  setFrameToArray = ($video: HTMLVideoElement, $canvas: HTMLCanvasElement, arr: Uint8Array | number[], width: number, height: number) => {
   const ctx = $canvas.getContext('2d')!
   ctx.clearRect(0, 0, width, height);
   ctx.drawImage($video, 0, 0, width, height)
@@ -23,6 +23,12 @@ export const captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanv
   for (let i = 0; i < img.data.length / 4; i++) {
     arr[i] = img.data[i * 4]
   }
+}
+
+export const  captureVideoToCanvas = ($video: HTMLVideoElement, $canvas: HTMLCanvasElement) => {
+  const ctx = $canvas.getContext('2d')!
+  ctx.clearRect(0, 0, $canvas.width, $canvas.height);
+  ctx.drawImage($video, 0, 0, $canvas.width, $canvas.height)
 }
 
 export const getBlobURL = ($canvas: HTMLCanvasElement) => {
