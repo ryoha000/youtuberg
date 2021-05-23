@@ -30,7 +30,8 @@ addEventListener('message', (ev: MessageEvent<ToWebWorkerFromPage>) => {
       }
       break
     case 'end':
-      labels.splice(0, 2)
+      console.log('end from worker')
+      labels.splice(0, labels.length)
       break
     default:
       const _exhaustiveCheck: never = msg;

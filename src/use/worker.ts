@@ -58,15 +58,13 @@ const useWorker = (state: State, compareCallBack: (msg: CompareResult) => void) 
       postMessageToWebWorkers(msg, i)
     }
     lastCuedIndex = -1
+    for (let i = 0; i < workers.length; i++) {
+      workers[i].isWork = false
+    }
     que.splice(0, que.length)
   }
 
-  let dCount = 0
   const enque = (msg: Enque) => {
-    if (dCount < 10) {
-      dCount++
-      console.log('enque', msg.time)
-    }
     if (que.length === 0) {
       sendCompare(msg)
     } else {
