@@ -37,7 +37,6 @@ let isInitialised = false
 let tabId = ''
 
 const resHist: CompareResultHist[] = []
-const resPixel: CompareResultPixel[] = []
 const resFeature: CompareResultFeature[] = []
 const postMessageToWebWorkers = (msg: ToWebWorkerFromBackground, index: number) => {
   workers[index].postMessage(msg)

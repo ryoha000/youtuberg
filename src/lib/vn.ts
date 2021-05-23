@@ -208,7 +208,7 @@ export const setupControl = (state: State) => {
   let lastSkipIndex = -1
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-      if (state.$originalVideo && state.$overlayCanvas && state.$video && state.player) {
+      if (state.$originalVideo && state.$overlayCanvas && state.$overlayVideo && state.overlayPlayer) {
         const nowTime = state.$originalVideo.currentTime
         for (let i = 0; i < state.vnDatas.length - 1; i++) {
           if (state.vnDatas[i].time > nowTime) {
@@ -219,14 +219,14 @@ export const setupControl = (state: State) => {
               break
             }
             if (state.vnDatas[i].isSelifEnd) {
-              const isPosed = state.$video.paused
+              const isPosed = state.$overlayVideo.paused
               if (!isPosed) {
-                state.player.pauseVideo()
+                state.overlayPlayer.pauseVideo()
               }
-              const tmpTime = state.player.getCurrentTime()
-              state.$video.addEventListener('seeked', () => {
-                if (state.$originalVideo && state.$overlayCanvas && state.$video && state.player) {
-                  captureVideoToCanvas(state.$video, state.$overlayCanvas)
+              const tmpTime = state.overlayPlayer.getCurrentTime()
+              state.$overlayVideo.addEventListener('seeked', () => {
+                if (state.$originalVideo && state.$overlayCanvas && state.$overlayVideo && state.overlayPlayer) {
+                  captureVideoToCanvas(state.$overlayVideo, state.$overlayCanvas)
                   state.$overlayCanvas.style.display = 'block'
                   lastSkipIndex = i
                   const waitTime = state.vnDatas[i + 1].time - nowTime
@@ -239,17 +239,17 @@ export const setupControl = (state: State) => {
                       }
                     }
                   }, waitTime * 1000);
-                  state.player.seekTo(tmpTime, true)
+                  state.overlayPlayer.seekTo(tmpTime, true)
                   if (!isPosed) {
-                    state.$video.addEventListener('seeked', () => {
-                      if (state.player) {
-                        state.player.playVideo()
+                    state.$overlayVideo.addEventListener('seeked', () => {
+                      if (state.overlayPlayer) {
+                        state.overlayPlayer.playVideo()
                       }
                     }, { once: true })
                   }
                 }
               }, { once: true })
-              state.player.seekTo(state.vnDatas[i].time, true)
+              state.overlayPlayer.seekTo(state.vnDatas[i].time, true)
             } else {
               state.$originalVideo.currentTime = state.vnDatas[i].time - 0.1
               state.$overlayCanvas.style.display = 'none'

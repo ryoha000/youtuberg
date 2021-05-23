@@ -34,8 +34,11 @@ export const hidePlayer = (id: string) => {
   const player = document.getElementById(id)
   if (!player) throw 'there no iframe'
   // player.style.display = 'none'
+  // player.style.top = '-200px'
   player.style.position = 'absolute'
-  player.style.top = '-200px'
+  player.style.zIndex = '-99'
+  // player.style.opacity = '1'
+  document.body.style.overflowX = 'hidden'
 }
 
 export const setupOverlayCanvas = (state: { $originalVideo: HTMLVideoElement | null }) => {

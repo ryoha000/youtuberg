@@ -3,7 +3,7 @@ import { CompareResult, End, Enque } from './lib/typing/message';
 import { isChange, setupControl, tempCheck } from './lib/vn';
 import useWorker from './use/worker'
 import { getPlayerVideoElement, getVideoElement, hidePlayer, setupOverlayCanvas, setupPlayer } from './lib/youtube';
-import { PLAYER_HEIGHT, PLAYER_ID, PLAYER_WIDTH } from './use/const';
+import { PLAYER_HEIGHT, PLAYER_ID, PLAYER_WIDTH, OVERLAY_PLAYER_ID } from './use/const';
 import { State } from './lib/typing/state';
 
 declare var scriptUrl: string
@@ -15,6 +15,8 @@ const state: State = {
   $canvas: null,
   $overlayCanvas: null,
   $video: null, 
+  overlayPlayer: null,
+  $overlayVideo: null,
   $originalVideo: null,
   player: null,
   diffs: [],
@@ -28,8 +30,10 @@ const reset = () => {
   state.$canvas?.remove()
   state.$overlayCanvas?.remove()
   state.$video = null
+  state.$overlayVideo = null
   state.$originalVideo = null
   state.player?.destroy()
+  state.overlayPlayer?.destroy()
   state.diffs.splice(0, state.diffs.length)
   state.vnDatas.splice(0, state.vnDatas.length)
   state.observer?.disconnect()
@@ -69,11 +73,18 @@ const boot = async () => {
     state.isInitialised = true
   }
 
-  state.player = await setupPlayer(PLAYER_ID, PLAYER_WIDTH, PLAYER_HEIGHT)
+  const [p, op] = await Promise.all([
+    setupPlayer(PLAYER_ID, PLAYER_WIDTH, PLAYER_HEIGHT),
+    setupPlayer(OVERLAY_PLAYER_ID, PLAYER_WIDTH, PLAYER_HEIGHT)
+  ])
+  state.player = p
+  state.overlayPlayer = op
 
   state.player.playVideo()
+  state.overlayPlayer.playVideo()
   state.$originalVideo = getVideoElement()
   state.$video = getPlayerVideoElement(PLAYER_ID)
+  state.$overlayVideo = getPlayerVideoElement(OVERLAY_PLAYER_ID)
   const PLAY_BACK_RATE = 3
 
   state.$video.addEventListener('loadedmetadata', async () => {
@@ -89,7 +100,9 @@ const boot = async () => {
       state.observer = oc.resizeObserver
     }
     hidePlayer(PLAYER_ID)
+    hidePlayer(OVERLAY_PLAYER_ID)
     state.player?.mute()
+    state.overlayPlayer?.mute()
     state.$canvas.getContext('2d')!.filter = 'grayscale(1) contrast(1000%)'
 
     const side = Math.floor(rect.width / 50)
@@ -132,20 +145,6 @@ try {
 }
 
 setupControl(state)
-// window.addEventListener('keydown', (e) => {
-//   if (e.key === 'Enter') {
-//     if (state.$originalVideo) {
-//       const nowTime = state.$originalVideo.currentTime
-//       // for (const vnData of state.vnDatas) {
-//       //   if (state.diffs[index].time > nowTime) {
-//       //     state.$originalVideo.currentTime = state.diffs[index].time - 0.25
-//       //     console.log(`to ${state.diffs[index].time} from ${nowTime}`)
-//       //     break
-//       //   }
-//       // }
-//     }
-//   }
-// })
 
 setInterval(() => {
   if (state.nowhref !== location.href) {
