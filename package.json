@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "set PRODUCTION=0 && node build.js",
     "build": "set PRODUCTION=1 && node build.js",
+    "build:linux": "PRODUCTION=1 node build.js",
     "type-check": "tsc --noEmit"
   },
   "author": "ryoha",
